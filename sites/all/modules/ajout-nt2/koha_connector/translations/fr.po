@@ -1,0 +1,162 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  koha.inc: n/a
+#  koha_connector.info: n/a
+#
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-12-27 11:37+0100\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: Claire Hernandez <claire.hernandez@biblibre.com>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: koha.inc:575
+msgctxt "libraries"
+msgid "Error retrieving patron checkouts."
+msgstr "Erreur de récupération des prêts de l'adhérent."
+
+#: koha.inc:599
+msgctxt "libraries"
+msgid "Item is on hold"
+msgstr "L'exemplaire est réservé"
+
+#: koha.inc:603
+msgctxt "libraries"
+msgid "Too many renewals"
+msgstr "Trop de renouvelements"
+
+#: koha.inc:607
+msgid "Unknown"
+msgstr "Inconnu"
+
+#: koha.inc:650
+msgctxt "libraries"
+msgid "On hold"
+msgstr "En réservation"
+
+#: koha.inc:654
+msgctxt "libraries"
+msgid "Waiting to be pulled"
+msgstr "En attente de retrait"
+
+#: koha.inc:677
+msgctxt "libraries"
+msgid "Bad patron or item identifier"
+msgstr "Mauvais adhérent ou identifieur d'exemplaire"
+
+#: koha.inc:746
+msgctxt "libraries"
+msgid "Error retrieving branches."
+msgstr "Erreur en récupérant les sites."
+
+#: koha.inc:751
+msgid "None"
+msgstr "Aucun"
+
+#: koha.inc:759
+msgctxt "libraries"
+msgid "Pickup location"
+msgstr "Lieu de retrait"
+
+#: koha.inc:762
+msgid "Set this to <em>None</em> to let your library choose the pickup location."
+msgstr "Mettre à <em>Aucun</em> pour laisser votre bibliothèque choisir le lieu de retrait."
+
+#: koha.inc:768
+msgid "Needed before date"
+msgstr "Nécessaire avant la date"
+
+#: koha.inc:771
+msgid "After which date the reservation is no longer desired"
+msgstr "Après quelle date la réservation n'est plus souhaitée"
+
+#: koha.inc:775
+msgctxt "libraries"
+msgid "Pickup expiry date"
+msgstr "Date d'expiration du retrait"
+
+#: koha.inc:778
+msgctxt "libraries"
+msgid "After which date the document is re-shelving if not withdrawn by the member"
+msgstr "Après quelle date le document est remis sur l'étagère s'il n'y a pas eu de retrait par l'adhérent"
+
+#: koha.inc:800
+msgid "Missing elements"
+msgstr "Eléments manquants"
+
+#: koha.inc:828
+msgctxt "libraries"
+msgid "Items should be picked up at @pickup."
+msgstr "Les exemplaires devraient être retirés à @pickup."
+
+#: koha.inc:832
+msgctxt "libraries"
+msgid "Unable to hold this item. @url"
+msgstr "Impossible de réserver cet exemplaire. @url"
+
+#: koha.inc:851
+msgid "Patron identity"
+msgstr "Identité de l'adhérent"
+
+#: koha.inc:857
+msgid "Surname"
+msgstr "Nom"
+
+#: koha.inc:865
+msgid "First name"
+msgstr "Prénom"
+
+#: koha.inc:873
+msgid "Date of birth"
+msgstr "Date de naissance"
+
+#: koha.inc:879
+msgid "Address / Contact"
+msgstr "Adresse / Contact"
+
+#: koha.inc:885
+msgid "Street number"
+msgstr "Numéro de rue"
+
+#: koha.inc:892
+msgid "Address"
+msgstr "Adresse"
+
+#: koha.inc:899
+msgid "Zip/Postal code"
+msgstr "Code postal"
+
+#: koha.inc:906
+msgid "City"
+msgstr "Ville"
+
+#: koha.inc:913
+msgid "email"
+msgstr "email"
+
+#: koha.inc:921
+msgid "Login"
+msgstr "Identifiant"
+
+#: koha.inc:1085
+msgid "@url returned bad status"
+msgstr "@url a retourné un mauvais statut"
+
+#: koha_connector.info:0
+msgid "Koha connector"
+msgstr "Connecteur Koha"
+
+#: koha_connector.info:0
+msgid "Koha connector for OPAC module"
+msgstr "Connecteur Koha pour le module OPAC"
+
+#: koha_connector.info:0
+msgid "opac"
+msgstr "opac"
+

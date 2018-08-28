@@ -1,0 +1,7 @@
+name = OIC Facets
+description = "Provides facets for the OIC network."
+core = 7.x
+package = OIC
+
+dependencies[] = apachesolr
+dependencies[] = facetapi

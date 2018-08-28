@@ -1,0 +1,186 @@
+#
+# robots.txt
+#
+# This file is to prevent the crawling and indexing of certain parts
+# of your site by web crawlers and spiders run by sites like Yahoo!
+# and Google. By telling these "robots" where not to go on your site,
+# you save bandwidth and server resources.
+#
+# This file will be ignored unless it is at the root of your host:
+# Used:    http://example.com/robots.txt
+# Ignored: http://example.com/site/robots.txt
+#
+# For more information about the robots.txt standard, see:
+# http://www.robotstxt.org/wc/robots.html
+#
+# For syntax checking, see:
+# http://www.sxw.org.uk/computing/robots/check.html
+
+# Sitemaps
+Sitemap: /sitemap.xml
+
+User-agent: *
+Crawl-delay: 10
+#
+# Core directories
+#
+Disallow: /includes/
+Disallow: /misc/
+Disallow: /modules/
+Disallow: /profiles/
+Disallow: /scripts/
+Disallow: /themes/
+#
+# Core files
+#
+Disallow: /CHANGELOG.txt
+Disallow: /cron.php
+Disallow: /INSTALL.mysql.txt
+Disallow: /INSTALL.pgsql.txt
+Disallow: /INSTALL.sqlite.txt
+Disallow: /install.php
+Disallow: /INSTALL.txt
+Disallow: /LICENSE.txt
+Disallow: /MAINTAINERS.txt
+Disallow: /update.php
+Disallow: /UPGRADE.txt
+Disallow: /xmlrpc.php
+#
+# Core paths
+#
+Disallow: /admin$
+Disallow: /?q=admin$
+Disallow: /*/admin$
+Disallow: /*/?q=admin$
+#
+Disallow: /admin/
+Disallow: /?q=admin/
+Disallow: /*/admin/
+Disallow: /*/?q=admin/
+#
+Disallow: /*/feed$
+#
+Disallow: /filter/tips/
+Disallow: /?q=filter/tips/
+Disallow: /*/filter/tips/
+Disallow: /*/?q=filter/tips/
+#
+Disallow: /logout$
+Disallow: /?q=logout$
+Disallow: /*/logout$
+Disallow: /*/?q=logout$
+#
+Disallow: /logout/
+Disallow: /?q=logout/
+Disallow: /*/logout/
+Disallow: /*/?q=logout/
+#
+Disallow: /node/add
+Disallow: /?q=node/add
+Disallow: /*/node/add
+Disallow: /*/?q=node/add
+#
+Disallow: /user$
+Disallow: /?q=user$
+Disallow: /*/user$
+Disallow: /*/?q=user$
+#
+Disallow: /user/register
+Disallow: /?q=user/register
+Disallow: /*/user/register
+Disallow: /*/?q=user/register
+#
+Disallow: /user/password
+Disallow: /?q=user/password
+Disallow: /*/user/password
+Disallow: /*/?q=user/password
+#
+Disallow: /user/login
+Disallow: /?q=user/login
+Disallow: /*/user/login
+Disallow: /*/?q=user/login
+#
+# Core module aggregator
+#
+Disallow: /aggregator/
+Disallow: /?q=aggregator/
+Disallow: /*/aggregator/
+Disallow: /*/?q=aggregator/
+#
+# Core module comment
+#
+Disallow: /comment/
+Disallow: /?q=comment/
+Disallow: /*/comment/
+Disallow: /*/?q=comment/
+#
+# Core module search
+#
+Disallow: /search$
+Disallow: /?q=search$
+Disallow: /*/search$
+Disallow: /*/?q=search$
+#
+Disallow: /search/
+Disallow: /?q=search/
+Disallow: /*/search/
+Disallow: /*/?q=search/
+#
+# Core module tracker
+#
+Disallow: /*/track$
+#
+# Module blocks404
+#
+Disallow: /blocks404$
+Disallow: /?q=blocks404$
+Disallow: /*/blocks404$
+Disallow: /*/?q=blocks404$
+#
+# Module boost
+#
+Disallow: /boost_stats.php
+#
+# Module calendar
+#
+Disallow: /calendar/
+Disallow: /?q=calendar/
+Disallow: /*/calendar/
+Disallow: /*/?q=calendar/
+#
+# Module print
+#
+Disallow: /print/
+Disallow: /?q=print/
+Disallow: /*/print/
+Disallow: /*/?q=print/
+#
+Disallow: /printpdf/
+Disallow: /?q=printpdf/
+Disallow: /*/printpdf/
+Disallow: /*/?q=printpdf/
+#
+# Module translation404
+#
+Disallow: /translation_not_found$
+Disallow: /?q=translation_not_found$
+Disallow: /*/translation_not_found$
+Disallow: /*/?q=translation_not_found$
+#
+# Module ubercart
+#
+Disallow: /cart$
+Disallow: /?q=cart$
+Disallow: /*/cart$
+Disallow: /*/?q=cart$
+#
+Disallow: /cart/
+Disallow: /?q=cart/
+Disallow: /*/cart/
+Disallow: /*/?q=cart/
+#
+# Miscellaneous
+#
+Disallow: /*sort=
+
+# END

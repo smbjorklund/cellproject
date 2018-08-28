@@ -1,0 +1,142 @@
+<?php
+
+/**
+ * @file
+ * Audio playback in a separate window with dynamic playlist editing.
+ */
+
+define('PUP_OPEN_ON_ADD_ALWAYS', 1);
+define('PUP_OPEN_ON_ADD_FIRST_TIME', 0);
+define('PUP_PLAY_ON_ADD_AUTO', 1);
+define('PUP_PLAY_ON_ADD_NONE', 0);
+
+/**
+ * Implements hook_help().
+ */
+function pup_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#pup':
+      return t('This module provides dynamic playlist editing and uninterrupted audio playback in a separate window.');
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function pup_permission() {
+  return array(
+    'access popup player' => array(
+      'title' => t('Access Pop-Up Player'),
+      'description' => t('Open the Pop-Up Player, play and edit the playlist.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function pup_menu() {
+  $items['pup/player'] = array(
+    'title' => t('Player'),
+    'page callback' => 'pup_player',
+    'access arguments' => array('access popup player'),
+    'type' => MENU_CALLBACK,
+    'file' => 'pup.pages.inc',
+  );
+  $items['admin/config/media/pup'] = array(
+    'title' => 'Pop-up Player',
+    'description' => 'configure the Pop-Up Player.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pup_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'pup.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pup_theme($existing, $type, $theme, $path) {
+  $items['pup_player'] = array(
+    'variables' => array(),
+    'template' => 'pup_player',
+    'file' => 'pup.pages.inc',
+  );
+  $items['pup_opener'] = array(
+    'variables' => array(),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function pup_block_info() {
+  $blocks['opener'] = array(
+    'info' => t('Pop-Up Player opener'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function pup_block_view($delta = '') {
+  if ($delta == 'opener') {
+    return array(
+      'subject' => t('Pop-Up Player'),
+      'content' => theme('pup_opener'),
+    );
+  }
+}
+
+/**
+ * Adds JavaScript libraries common to both the player and the opener.
+ */
+function pup_add_js() {
+  $settings['pup'] = array(
+    'playerPath' => url('pup/player'),
+    'playlistPath' => url('pup/ajax/playlist'),
+    'swfPath' => url(libraries_get_path('jplayer')),
+    'openOnAdd' => (bool)variable_get('pup_open_on_add', PUP_OPEN_ON_ADD_ALWAYS),
+    'playOnAdd' => (bool)variable_get('pup_play_on_add', PUP_PLAY_ON_ADD_AUTO),
+    'showHour' => variable_get('pup_show_hour', TRUE),
+  );
+  if (($activeColor = variable_get('pup_add_link_active_color', '#fff586')) && ($normalColor = variable_get('pup_add_link_normal_color', '#ffffff'))) {
+    $settings['pup']['addLinkActiveColor'] = $activeColor;
+    $settings['pup']['addLinkNormalColor'] = $normalColor;
+  }
+  drupal_add_js($settings, 'setting');
+  drupal_add_js(libraries_get_path('jstorage') . '/jstorage.js', 'file');
+}
+
+/**
+ * Theme function that outputs the content of the player opener block.
+ */
+function theme_pup_opener() {
+  $output = '';
+
+  // IE6 and IE7 are not supported for lack of local storage support.
+  if (isset($_SERVER['HTTP_USER_AGENT']) && (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.0') !== FALSE) || (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 7.0'))) {
+    // Hide "add to playlist" links and do not provide any player opener block.
+    drupal_add_css('.pup-playlist-add { display: none; }', array('type' => 'inline', 'browsers' => array('IE' => 'lte IE 7')));
+  }
+  else {
+    pup_add_js();
+    drupal_add_js(libraries_get_path('jquery-color') . '/jquery.color.js', 'file');
+    drupal_add_js(drupal_get_path('module', 'pup') . '/js/pup_opener.drupal.js', 'file');
+
+    $output .= '<div class="pup-opener-text"><p>';
+    if (variable_get('pup_play_on_add', PUP_PLAY_ON_ADD_AUTO) == PUP_PLAY_ON_ADD_AUTO) {
+      $output .= t("Browse the site, add some items to your playlist, and enjoy uninterrupted audio while you browse and add more items to your playlist!", array('!open' => ('<a href="#" class="pup-opener" title="' . t('Open or reload the player') . '">' . t('open the player') . '</a>')));
+    }
+    else {
+      $output .= t("Browse the site, add some items to your playlist, and !open to start listening your selected items. Enjoy uninterrupted audio while you browse and add more items to your playlist!", array('!open' => ('<a href="#" class="pup-opener" title="' . t('Open or reload the player') . '">' . t('open the player') . '</a>')));
+    }
+    $output .= '</p></div>';
+    $output .= '<div class="pup-opener-link"><a href="#" class="pup-opener" title="' . t('Open or reload the player') . '">' . t('Open the player') . '</a><span class="pup-opener-count"></span></div>';
+  }
+
+  return $output;
+}

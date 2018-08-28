@@ -1,0 +1,15 @@
+name = Koha connector
+description = Koha connector for OPAC module
+package = opac
+core = 7.x
+
+dependencies[] = opac
+
+files[] = koha.inc
+
+; Information added by drupal.org packaging script on 2013-10-17
+version = "7.x-1.3"
+core = "7.x"
+project = "koha_connector"
+datestamp = "1381992615"
+

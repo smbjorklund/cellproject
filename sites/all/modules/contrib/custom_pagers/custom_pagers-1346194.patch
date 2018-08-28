@@ -1,0 +1,16 @@
+diff --git a/custom_pagers.module b/custom_pagers.module
+index 3df67ff..7d6e9d5 100644
+--- a/custom_pagers.module
++++ b/custom_pagers.module
+@@ -281,7 +281,10 @@ function pager_entries_by_key($key, $list, $increment = 1) {
+     'last' => $list[count($list) - 1],
+     'full_list' => $list,
+   );
+-
++  if ($key == -1) {
++    $nav['current_index'] = $key;
++    return $nav;
++  }
+   foreach ($nav as $k => $v) {
+     if ($nav[$k] == $list[$key]) {
+       $nav[$k] = NULL;

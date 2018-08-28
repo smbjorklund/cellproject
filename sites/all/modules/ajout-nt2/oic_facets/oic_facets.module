@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * @file
+ * Provides facets for the OIC network.
+ */
+
+/**
+ * Implements hook_facetapi_facet_info().
+ */
+function oic_facets_facetapi_facet_info(array $searcher_info) {
+  $facets = array();
+
+  $langcodes = locale_language_list('language');
+  foreach (array_keys($langcodes) as $langcode) {
+    $facets['oic_' . $langcode . '_bundle'] = array(
+      'name' => 'oic_' . $langcode . '_bundle',
+      'label' => t('OIC Type (@langcode)', array('@langcode' => $langcode)),
+      'description' => t('Filtering by content type (@langcode)', array('@langcode' => $langcode)),
+      'field' => oic_facets_get_index_key('bundle', $langcode),
+    );
+  }
+
+  return $facets;
+}
+
+/**
+ * Implements hook_apachesolr_index_document_build().
+ */
+function oic_facets_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type, $env_id) {
+  $entity_langcode = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
+  if ($entity_langcode == LANGUAGE_NONE) {
+    // Index all translations of the values, in language-specific Solr fields. 
+    $langcodes = array_keys(locale_language_list('language'));
+  }
+  else {
+    // Only index the value in the entity's language.
+    $langcodes = array($entity_langcode);
+  }
+
+  list($entity_id, $vid, $entity_bundle) = entity_extract_ids($entity_type, $entity);
+  $info = entity_get_info($entity_type);
+  $label = isset($info['bundles'][$entity_bundle]['label']) ? $info['bundles'][$entity_bundle]['label'] : $entity_bundle;
+  foreach ($langcodes as $langcode) {
+    if (module_exists('i18n_string')) {
+      // Translate bundle name. Based on i18n_node_translate_type().
+      $translated_label = i18n_string_translate(
+        array($entity_type, 'type', $entity_bundle, 'name'),
+        $label,
+        array('langcode' => $langcode, 'sanitize' => FALSE)
+      );
+    }
+    else {
+      $translated_label = $label;
+    }
+    $document->setMultiValue(oic_facets_get_index_key('bundle', $langcode), $translated_label);
+  }
+}
+
+/**
+ * Constructs the index key for a given index field name.
+ */
+function oic_facets_get_index_key($name, $langcode, $multiple = TRUE, $index_type = 'string') {
+  return apachesolr_index_key(
+    array(
+      'index_type' => $index_type,
+      'multiple' => $multiple,
+      'name' => 'oic_' . $langcode . '_' . $name,
+    )
+  );
+}

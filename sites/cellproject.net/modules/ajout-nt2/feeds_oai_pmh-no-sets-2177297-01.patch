@@ -1,0 +1,281 @@
+diff -u /tmp/feeds_oai_pmh/FeedsOAIHTTPFetcher.inc ./FeedsOAIHTTPFetcher.inc
+--- /tmp/feeds_oai_pmh/FeedsOAIHTTPFetcher.inc	2011-09-05 16:40:56.000000000 -0400
++++ ./FeedsOAIHTTPFetcher.inc	2014-12-05 23:59:28.069357836 -0500
+@@ -9,6 +9,7 @@
+   protected $oai_endpoint_url;
+   protected $from_timestamp;
+   protected $until_timestamp;
++  protected $resumption_token;
+   public $repository;
+ 
+   /**
+@@ -79,7 +80,6 @@
+         }
+         else {
+           // Store current system timestamp so next request limits items returned.
+-          $resumption_token = "";
+           $this->setLastDate(time());
+         }
+       }
+@@ -147,7 +147,7 @@
+         $until_timestamp = $this->dateFieldToTimestamp($source_config['dates']['to']);
+       }
+       else {
+-        $from_timestamp = (int)variable_get('feeds_oai:from:' . $source_config['set'] . ':' . $source_config['source'], FALSE);
++        $from_timestamp = (int)variable_get('feeds_oai:from:' . $source_config['set'] . ':' . $source_config['source'], 0);
+         if ($from_timestamp > 0) {
+           $from_timestamp = $from_timestamp + 1;
+         }
+@@ -167,29 +167,32 @@
+   }
+ 
+   /**
+-   * Declare defaults.
++   * Implements FeedsSourceInterface::hasSourceConfig().
++   *
++   * Implementing this function prevents undesirable calls to sourceForm().
+    */
+-  public function configDefaults() {
+-    // TODO: is this needed?
+-    return array(
+-      'auto_detect_feeds' => FALSE,
+-      'use_pubsubhubbub'  => FALSE,
+-      'last_fetched_timestamp' => '',
+-      'earliest_timestamp' => '',
+-      'use_dates' => FALSE,
+-      'to' => array(),
+-      'from' => array(),
+-    );
+-
++  public function hasSourceConfig() {
++    return TRUE;
+   }
+ 
+   /**
+-   * Add form options.
++   * Implements FeedsSourceInterface::sourceDefaults().
++   *
++   * Implementing this function prevents undesirable calls to sourceForm().
+    */
+-  public function configForm(&$form_state) {
+-    $form = array();
+-    // TODO: Specify metadata format here?
+-    return $form;
++  public function sourceDefaults() {
++    return array(
++      // Actual form elements.
++      'source' => '',
++      'set' => '*',
++      'use_dates' => FALSE,
++      'from' => array(),
++      'to' => array(),
++      'restart' => FALSE,
++      // Repository info.
++      'last_fetched_timestamp' => 0,
++      'earliest_timestamp' => 0,
++    );
+   }
+ 
+   /**
+@@ -197,27 +200,6 @@
+    */
+   public function sourceForm($source_config) {
+     $form = parent::sourceForm($source_config);
+-    $error = FALSE;
+-
+-    // If earliest_timestamp is not set, and source is, then get info from
+-    // repository to populate settings.
+-    if (isset($source_config['source']) && !empty($source_config['source'])) {
+-      require_once(drupal_get_path('module', 'feeds_oai_pmh') . '/feeds_oai_pmh.inc');
+-      $result = feeds_oai_pmh_identify($source_config['source']);
+-      #dpm($result);
+-      if ($result['status'] == 0) {
+-        $source_config = array_merge($source_config, $result['repository']);
+-      }
+-      else {
+-        drupal_set_message(t('There was a problem fetching repository information: !list', array('!list' => $result['output'])));
+-        $error = TRUE;
+-      }
+-    }
+-
+-    if (isset($result) && $error == FALSE) {
+-      // Build options array for sets available in repository.
+-      $sets_options = feeds_oai_pmh_sets_options($result['repository']['sets']);
+-    }
+ 
+     // Override the default "source" element provided by Feeds.
+     // Clearer label and description.
+@@ -234,25 +216,35 @@
+     // A set wrapper to handle replacement by AJAX callback
+     $form['source']['#prefix'] = '<div class="clear-block" id="ahah-element">';
+ 
+-    if ($form['source']['#default_value']) {
++    // Get info from repository to populate settings.
++    $set_options = feeds_oai_pmh_sets_options(FALSE);
++    if ($source_config['source']) {
+       require_once(drupal_get_path('module', 'feeds_oai_pmh') . '/feeds_oai_pmh.inc');
+-      $result = feeds_oai_pmh_identify($form['source']['#default_value']);
++
++      $result = feeds_oai_pmh_identify($source_config['source']);
+       if ($result['status'] == 0) {
+         $source_config = array_merge($source_config, $result['repository']);
+-      }
+-      elseif (isset($result['repository'])) {
+-        $sets_options = feeds_oai_pmh_sets_options($result['repository']['sets']);
++        $set_options = feeds_oai_pmh_sets_options($result['repository']['sets']);
+       }
+       else {
+-        $sets_options = feeds_oai_pmh_sets_options(array());
++        drupal_set_message(t('There was a problem fetching repository information: !list', array('!list' => $result['output'])));
++      }
++
++      $msg = feeds_oai_pmh_current_status_msg($source_config['source'], $source_config['set']);
++      if ($msg) {
++        $form['status'] = array(
++          '#markup' => $msg,
++          '#prefix' => '<div class="messages status">',
++          '#suffix' => '</div>',
++        );
+       }
+     }
+ 
+     $form['set'] = array(
+       '#type' => 'select',
+       '#title' => t('Set to fetch'),
+-      '#default_value' => isset($source_config['set']) ? $source_config['set'] : NULL,
+-      '#options' => isset($sets_options) ? $sets_options : array(),
++      '#default_value' => $source_config['set'],
++      '#options' => $set_options,
+       '#suffix' => '',
+       '#ajax' => array(
+         'callback' => 'feeds_oai_pmh_ajax_callback',
+@@ -262,20 +254,10 @@
+         'event' => 'change',
+       ),
+     );
+-
+-    if (isset($source_config['source']) && isset($source_config['set'])) {
+-      $msg = feeds_oai_pmh_current_status_msg($source_config['source'], $source_config['set']);
+-      if ($msg) {
+-        $form['status'] = array(
+-          '#value' => '<div class="messages status">' . $msg . '</div>',
+-        );
+-      }
+-    }
+-
+     $form['use_dates'] = array(
+       '#type' => 'checkbox',
+       '#title' => 'Limit fetch by record creation date',
+-      '#default_value' => isset($source_config['use_dates']) ? $source_config['use_dates'] : NULL,
++      '#default_value' => $source_config['use_dates'],
+     );
+     $form['dates'] = array(
+       '#type' => 'fieldset',
+@@ -287,7 +269,7 @@
+          ),
+       ),
+     );
+-    if (isset($source_config['earliest_timestamp']) && $source_config['earliest_timestamp'] > 0) {
++    if ($source_config['earliest_timestamp'] > 0) {
+       $date = format_date($source_config['earliest_timestamp'], 'custom', 'M d, Y');
+       $form['dates']['#description'] = t('Note: earliest record reported by repository is @date',
+           array('@date' => $date));
+@@ -295,12 +277,12 @@
+     $form['dates']['from'] = array(
+       '#type' => 'date',
+       '#title' => t('Starting date'),
+-      '#default_value' => isset($source_config['dates']['from']) ? $source_config['dates']['from'] : NULL,
++      '#default_value' => $source_config['dates']['from'],
+     );
+     $form['dates']['to'] = array(
+       '#type' => 'date',
+       '#title' => t('Ending date'),
+-      '#default_value' => isset($source_config['dates']['to']) ? $source_config['dates']['to'] : NULL,
++      '#default_value' => $source_config['dates']['to'],
+     );
+     $form['restart'] = array(
+       '#type' => 'checkbox',
+@@ -310,7 +292,7 @@
+           Normally, all imports that have already begun will only try to fetch
+           new items until this option is checked, or if the "Delete items"
+           option is used.'),
+-      '#suffix' => '</div>',
++      '#suffix' => '</div>',  // Close $form['source']['#prefix'].
+     );
+ 
+     return $form;
+diff -u /tmp/feeds_oai_pmh/FeedsOAIParser.inc ./FeedsOAIParser.inc
+--- /tmp/feeds_oai_pmh/FeedsOAIParser.inc	2011-09-05 16:40:56.000000000 -0400
++++ ./FeedsOAIParser.inc	2014-12-05 23:44:04.981341253 -0500
+@@ -41,6 +41,12 @@
+           $result->items[] = $item;
+         }
+       }
++      else {
++        foreach ($feed['items'] as $index => $item) {
++          // Return the items found in feed.
++          $result->items[] = $item;
++        }
++      }
+     }
+     
+     return $result;
+diff -u /tmp/feeds_oai_pmh/feeds_oai_pmh.inc ./feeds_oai_pmh.inc
+--- /tmp/feeds_oai_pmh/feeds_oai_pmh.inc	2011-09-05 16:40:56.000000000 -0400
++++ ./feeds_oai_pmh.inc	2014-12-05 23:56:31.953354672 -0500
+@@ -37,7 +37,7 @@
+ 
+   $result = drupal_http_request($url);
+   if ($result->code != 200) {
+-    $message = 'OAI repository %repo is not avaliable, please check the base URL %url is correct.';
++    $message = 'OAI repository %repo is not available, please check the base URL %url is correct.';
+     $args = array('%repo' => $baseurl, '%url' => $baseurl);
+     watchdog('feeds_oai_pmh', $message, $args, WATCHDOG_ERROR);
+     return array(
+@@ -194,17 +194,24 @@
+     return FALSE;
+   }
+   if (isset($xml->error)) {
+-    return FALSE;
++    foreach ($xml->error as $error) {
++      $attributes = $error->attributes();
++      if (!isset($attributes['code']) || $attributes['code'] != 'noSetHierarchy') {
++        // Ignore the noSetHierarchy error. Consider any other as fatal.
++        return FALSE;
++      }
++    }
+   }
+-
+-  // Put set names into $sets array
+-  foreach ($xml->ListSets->set as $set) {
+-    $sets[(string)$set->setSpec]['name'] = (string)$set->setName;
+-    if ($set->setDescription) {
+-      // TODO: Use SimpleXML instead of regexp
+-      $description = $set->setDescription->asXML();
+-      $description = preg_replace('/.*?<dc:description>([^<]+)<.dc:description.*/s', '\1', $description);
+-      $sets[(string)$set->setSpec]['description'] = $description;
++  else {
++    // Put set names into $sets array
++    foreach ($xml->ListSets->set as $set) {
++      $sets[(string)$set->setSpec]['name'] = (string)$set->setName;
++      if ($set->setDescription) {
++        // TODO: Use SimpleXML instead of regexp
++        $description = $set->setDescription->asXML();
++        $description = preg_replace('/.*?<dc:description>([^<]+)<.dc:description.*/s', '\1', $description);
++        $sets[(string)$set->setSpec]['description'] = $description;
++      }
+     }
+   }
+   return $sets;
+diff -u /tmp/feeds_oai_pmh/feeds_oai_pmh.module ./feeds_oai_pmh.module
+--- /tmp/feeds_oai_pmh/feeds_oai_pmh.module	2011-09-05 16:40:56.000000000 -0400
++++ ./feeds_oai_pmh.module	2014-12-05 23:56:31.953354672 -0500
+@@ -33,7 +33,7 @@
+  * Return a "drupalized" hierarchic options form element for the sets in a repository.
+  */
+ function feeds_oai_pmh_sets_options($sets) {
+-  $options = array('*' => t('[all sets]'));
++  $options = array('*' => t('- All sets -'));
+   if (is_array($sets)) {
+     ksort($sets);
+     $last_depth = 0;

@@ -1,0 +1,50 @@
+Documentation pour le module OIC Facets
+
+-- DESCRIPTION --
+
+Ce module fournit des facettes pour le réseau de sites de l'Observatoire de
+l'imaginaire contemporain (OIC). Les facettes fournies sont décrites dans les
+sections qui suivent.
+
+
+-- FACETTE: OIC TYPE --
+
+La facette OIC Type représente les types de contenus.
+
+Le module Apache Solr Search Integration fournit déjà une telle facette, mais
+celle-ci indexe les noms machine des types de contenus et dépend de Drupal pour
+afficher le nom utilisateur. Si l'index réfère à un type qui n'existe pas sur
+le site fédérateur de l'OIC, ce dernier ne peut afficher que le nom machine du
+type de contenu.
+
+Le module Apache Solr Multisite Search fournit une facette de remplacement qui
+règle ce problème, mais celle-ci ne prend pas en charge les traductions des
+types de contenus.
+
+La facette OIC Type résoud donc ces problèmes. Elle indexe les noms utilisateur
+des types de contenus pour chacune des langues. Les noms affichés dans la
+facette sont directement ceux tirés de l'index Solr et aucun "mapping" n'est
+requis. Le site fédérateur peut ainsi afficher le nom d'un type qui n'existe
+que sur l'un des sites satellites, et cela dans la langue courante de
+l'utilisateur.
+
+Ce module n'est pertinent que dans le contexte d'une indexation multisite et
+multilingue.
+
+
+-- AVERTISSEMENT --
+
+Ce module dépend de la stratégie multilingue suivante:
+
+* Lorsqu'un contenu est indépendant de la langue, on indexe son contenu pour
+  chacune des langues du système (p.ex.: les champs français et anglais du type
+  de contenu sont tous deux renseignés; ainsi la facette pourra filtrer les
+  résultats autant en français qu'en anglais).
+
+* Lorsqu'un contenu concerne une langue spécifique, on indexe son contenu
+  seulement pour cette langue.
+  
+
+-- CRÉDIT --
+
+Développé par Whisky Echo Bravo (http://whiskyechobravo.com).

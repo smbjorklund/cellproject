@@ -1,0 +1,64 @@
+<?php
+
+function web_video_transcoder_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'video_preset_form') {
+    $factory = new Transcoder();
+    $transcoder = $factory->getTranscoder();
+    if ($transcoder->getName() == 'Web Video Service') {
+      $preset = isset($form_state['build_info']['args'][0]) ? $form_state['build_info']['args'][0] : array();
+
+      // Hide unsupported options
+      $form['settings']['video']['video_preset']['#type'] = 'value';
+      $form['settings']['video']['video_aspectmode']['#type'] = 'value';
+      $form['settings']['video']['video_upscale']['#type'] = 'value';
+      $form['settings']['adv_video']['max_frame_rate']['#type'] = 'value';
+      $form['settings']['vid_optimization']['#type'] = 'hidden';
+      $form['settings']['vid_optimization']['autolevels']['#type'] = 'value';
+      $form['settings']['vid_optimization']['deblock']['#type'] = 'value';
+      $form['settings']['vid_optimization']['denoise']['#type'] = 'value';
+
+      // Add custom options
+      $form['settings']['video']['test_mode'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Test mode'),
+        '#description' => t('In test mode, transcoded video will be at most five seconds in length and will be watermarked.'),
+        '#default_value' => !empty($preset['settings']['test_mode']) ? $preset['settings']['test_mode'] : FALSE,
+      );
+      $form['settings']['adv_video']['h264'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('H264 settings'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $levels = drupal_map_assoc(array('1','1b','1.1','1.2','1.3','2','2.1','2.2','3','3.1','3.2','4','4.1','4.2','5','5.1'));
+      $levels = array_merge(array('none' => 'Not set'), $levels);
+      $form['settings']['adv_video']['h264']['h264_level'] = array(
+        '#type' => 'select',
+        '#title' => t('H264 Level'),
+        '#options' => $levels,
+        '#default_value' => !empty($preset['settings']['h264_level']) ? $preset['settings']['h264_level'] : 'none',
+      );
+      $dpb_values = range(0, 16);
+      $dpb_values = drupal_map_assoc($dpb_values);
+      $dpb_values = array_merge(array('none' => 'Not set'), $dpb_values);
+      $form['settings']['adv_video']['h264']['h264_max_ref_frames'] = array(
+        '#type' => 'select',
+        '#title' => t('H264 Decode Picture Buffer Size'),
+        '#options' => $dpb_values,
+        '#default_value' => !empty($preset['settings']['h264_max_ref_frames']) ? $preset['settings']['h264_max_ref_frames'] : 'none',
+      );
+    }
+  }
+
+  elseif (($form_id == 'field_ui_field_edit_form') || ($form_id == 'field_ui_field_edit_form')) {
+    if ($form['#field']['module'] == 'video' && $form['#field']['type'] == 'video') {
+      // Remove reference to specific transcoder.
+      $form['field']['settings']['autoconversion']['#description'] =
+        t('Convert videos automatically using your favorite transcoder. You can define videos presets at !preset to automatically convert videos to web compatible formats eg. FLV, MP4. Please make sure to configure your !settings to make this work properly.',
+          array(
+            '!settings' => l(t('transcoder settings'), 'admin/config/media/video/transcoders'),
+            '!preset' => l(t('preset settings'), 'admin/config/media/video/presets'))
+        );
+    }
+  }
+}

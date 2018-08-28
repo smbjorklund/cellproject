@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * Implements hook_requirements().
+ *
+ * Checks for required libraries.
+ */
+function pup_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'install') {
+    $t = get_t();
+
+    // Happyworm's jPlayer (http://www.jplayer.org).
+    $jplayer = ($jplayer = libraries_get_path('jplayer')) && file_exists($jplayer . '/jquery.jplayer.min.js');
+    $requirements['jplayer'] = array(
+      'title' => $t('jPlayer'),
+      'description' => $jplayer ? $t('jPlayer is installed.') : $t('The <a target="_blank" href="http://www.jplayer.org">jPlayer library</a> is missing and required for Pop-Up Player. See installation instructions in Pop-Up Player\'s README.txt.'),
+      'severity' => $jplayer ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+    );
+
+    // Andris Reinman jStorage library (http://www.jstorage.info).
+    $jstorage = ($jstorage = libraries_get_path('jstorage')) && file_exists($jstorage . '/jstorage.js');
+    $requirements['jstorage'] = array(
+      'title' => $t('jStorage library'),
+      'description' => $jstorage ? $t('jStorage is installed.') : $t('The <a target="_blank" href="http://www.jstorage.info">jStorage library</a> is missing and required for Pop-Up Player. See installation instructions in Pop-Up Player\'s README.txt.'),
+      'severity' => $jstorage ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+    );
+  }
+
+  return $requirements;
+}

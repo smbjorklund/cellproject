@@ -1,0 +1,10 @@
+name = "CELL Migrate OAI-PMH"
+description = "Migration from an OAI-PMH data source that's compliant with the CELL's guidelines."
+package = "CELL"
+core = 7.x
+
+dependencies[] = migrate_oaipmh
+dependencies[] = migrate_ui
+
+files[] = includes/migration.inc
+files[] = includes/wizard.inc

@@ -1,0 +1,13 @@
+name = opac register
+description = Allows drupal users to register to a library
+package = opac
+core = 7.x
+
+dependencies[] = opac
+
+; Information added by  packaging script on 2013-11-05
+version = "7.x-2.0"
+core = "7.x"
+project = "opac"
+datestamp = "1383643731"
+

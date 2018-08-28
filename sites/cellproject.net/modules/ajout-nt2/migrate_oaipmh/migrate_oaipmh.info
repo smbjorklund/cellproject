@@ -1,0 +1,16 @@
+name = "Migrate OAI-PMH"
+description = "Migration from a OAI-PMH data source."
+package = "Development"
+core = 7.x
+
+dependencies[] = migrate
+dependencies[] = composer_manager
+
+files[] = includes/oaipmh.inc
+
+; Information added by Drupal.org packaging script on 2014-12-18
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "migrate_oaipmh"
+datestamp = "1418908082"
+

@@ -1,0 +1,7 @@
+name = WEB Video Transcoder
+description = Whisky Echo Bravo video transcoder client
+core = 7.x
+dependencies[] = video
+dependencies[] = lauth_api
+
+files[] = transcoders/TranscoderAbstractionFactoryWeb.inc

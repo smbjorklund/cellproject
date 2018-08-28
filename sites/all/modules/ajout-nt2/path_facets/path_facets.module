@@ -1,0 +1,277 @@
+<?php
+
+/**
+ * @file
+ * Provides hierarchical Solr facets for path-like values.
+ */
+
+/**
+ * Implements hook_facetapi_facet_info().
+ *
+ * Declares a facet for each taxonomy term reference field.
+ */
+function path_facets_facetapi_facet_info(array $searcher_info) {
+  $facets = array();
+  foreach (field_info_fields() as $field_name => $field) {
+    if ($field['type'] == 'taxonomy_term_reference') {
+      $display_name = path_facets_get_field_display_name($field);
+      $langcodes = path_facets_get_taxonomy_term_reference_field_languages($field);
+      foreach ($langcodes as $langcode) {
+        $facet_name = path_facets_get_facet_name($field, $langcode);
+        $facets[$facet_name] = array(
+          'name' => $facet_name,
+          'label' => check_plain($display_name . ($langcode == LANGUAGE_NONE ? '' : ' (' . $langcode . ')')),
+          'description' => t('Hierarchical path filtering by field of type @type.', array('@type' => $field['type'])),
+          'field' => path_facets_get_index_name($field, $langcode),
+          'map callback' => 'path_facets_map_values',
+          'hierarchy callback' => 'path_facets_get_parents',
+          'facet mincount allowed' => TRUE,
+          'dependency plugins' => array('bundle', 'role'),
+        );
+      }
+    }
+  }
+  return $facets;
+}
+
+/**
+ * Implements hook_apachesolr_index_document_build().
+ */
+function path_facets_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type, $env_id) {
+  $entity_langcode = isset($entity->language) ? $entity->language : LANGUAGE_NONE;
+  // Note: field_info_fields() is a costly call, but the apachesolr module
+  // already calls it when indexing fields.
+  foreach (field_info_fields() as $field_name => $field) {
+    if ($field['type'] == 'taxonomy_term_reference') { 
+      $items = field_get_items($entity_type, $entity, $field_name, $entity_langcode);
+      if (!empty($items)) {
+        $langcodes = path_facets_get_taxonomy_term_reference_field_languages($field);
+        foreach ($langcodes as $langcode) {
+          // Collect term path tokens in array $tokens. For example, for a
+          // field having both terms "Quebec" and "New York", $tokens would
+          // contain:
+          // - North America
+          // - North America/Canada
+          // - North America/Canada/Quebec
+          // - North America/United States
+          // - North America/United States/New York
+          // Note that the token "North America" is present only once even
+          // though it appears in the paths of two different terms, because
+          // $tokens is keyed by token to avoid duplicates.
+          $tokens = array();
+          foreach ($items as $delta => $item) {
+            $term = isset($item['taxonomy_term']) ? $item['taxonomy_term'] : taxonomy_term_load($item['tid']);
+            // Retrieve all possible paths leading to the term.
+            $paths = path_facets_get_taxonomy_term_paths($term, $langcode);
+            foreach ($paths as $path) {
+              // Merge new tokens with known ones. Because the $tokens array is
+              // keyed by token, there won't be any duplicates.
+              $tokens = array_merge($tokens, path_facets_make_hierarchy_tokens($path));
+            }
+          }
+          // Tokens have been collected for all items. Now index the tokens.
+          foreach ($tokens as $token) {
+            $document->setMultiValue(path_facets_get_index_name($field, $langcode), apachesolr_clean_text($token));
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Constructs the facet name for a given field.
+ */
+function path_facets_get_facet_name($field, $langcode = LANGUAGE_NONE) {
+  $parts = array(variable_get('path_facets_facet_name_prefix', 'path'));
+  if ($langcode == LANGUAGE_NONE) {
+    $langcode = language_from_default();
+  }
+  $parts[] = $langcode;
+  $parts[] = $field['field_name'];
+  return implode('_', $parts);
+}
+
+/**
+ * Constructs the index name for a given field.
+ */
+function path_facets_get_index_name($field, $langcode = LANGUAGE_NONE) {
+  $parts = array(variable_get('path_facets_index_name_prefix', 'path'));
+  if ($langcode == LANGUAGE_NONE) {
+    $langcode = language_from_default();
+  }
+  $parts[] = $langcode;
+  $parts[] = $field['field_name'];
+  $name = implode('_', $parts);
+  // Return the name prepended with its dynamic field type prefix.
+  return apachesolr_index_key(
+    array(
+      'index_type' => 'string',
+      'multiple' => TRUE,
+      'name' => $name,
+    )
+  );
+}
+
+/**
+ * Recursively finds all the possible paths describing a term.
+ *
+ * @param $term
+ *   A term object.
+ * @param $langcode
+ *   The language into which the paths must be localized.
+ * @return
+ *   An array of paths, where each path is represented by an array of terms.
+ */
+function path_facets_get_taxonomy_term_paths($term, $langcode) {
+  // Clone the term to avoid altering the cached term object with a translated version.
+  $term = clone $term;
+
+  if (module_exists('i18n_taxonomy') && $langcode != LANGUAGE_NONE) {
+    if (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_LOCALIZE)) {
+      $term->name = i18n_taxonomy_term_name($term, $langcode);
+    }
+    elseif (i18n_taxonomy_vocabulary_mode($term->vid, I18N_MODE_TRANSLATE)) {
+      $term = i18n_taxonomy_term_get_translation($term, $langcode);
+    }
+  }
+
+  $parents = taxonomy_get_parents($term->tid);
+  if (!empty($parents)) {
+    $all_paths = array();
+    foreach ($parents as $parent_term) {
+      $parent_paths = path_facets_get_taxonomy_term_paths($parent_term, $langcode);
+      foreach ($parent_paths as $parent_path) {
+        $parent_path[] = $term;
+        $all_paths[] = $parent_path;
+      }
+    }
+    return $all_paths;
+  }
+  else {
+    return array(array($term));
+  }
+}
+
+/**
+ * Builds hierarchy tokens for a given path.
+ *
+ * For example, if $path is an array with items 'North America', 'United
+ * States', 'California', and 'San Francisco', the returned "hierarchy tokens"
+ * array would contain the following values:
+ *   - '/North America'
+ *   - '/North America/United States'
+ *   - '/North America/United States/California'
+ *   - '/North America/United States/California/San Francisco'
+ *
+ * @param $path
+ *   A path, where each component is represented by an array of terms.
+ * @return
+ *   The hierachy tokens, an array of string values ready for indexing. To
+ *   prevent duplicates on array merges, the tokens are conveniently used both
+ *   as keys and values.
+ */
+function path_facets_make_hierarchy_tokens(array $path) {
+  $path_tokens = array();
+  $last_token = '';
+  foreach ($path as $term) {
+    // Path components are separated with '/'.
+    $last_token = $last_token . '/' . path_facets_escape($term->name);
+    // Key by token to avoid duplicates.
+    $path_tokens[$last_token] = $last_token;
+  }
+  return $path_tokens;
+}
+
+/**
+ * A map callback for Facet API; determines how to display the values when they
+ * return as a facet.
+ */
+function path_facets_map_values(array $values) {
+  $map = array();
+  foreach ($values as $value) {
+    $map[$value] = path_facets_get_display_value($value);
+  }
+  return $map;
+}
+
+/**
+ * Extracts the display value from a hierarchy token.
+ */
+function path_facets_get_display_value($token) {
+  // Display only the last component of the value, ignoring escaped slashes
+  // when extracting the component.
+  // FIXME: The escaping method allows ambiguities, where a parent term
+  // ending with '/' cannot be distinguished from a child term beginning with
+  // '/'. For example, if the value is '/parent///child', the regex will
+  // extract '//child', which will then be unescaped and mapped to '/child'.
+  $matches = array();
+  preg_match('_/((//|[^/])*)$_', $token, $matches);
+  return path_facets_unescape($matches[1]);
+}
+
+/**
+ * A hierarchy callback for Facet API; finds the parent values of each of the
+ * given values.
+ */
+function path_facets_get_parents(array $values) {
+  $parents = array();
+  foreach ($values as $value) {
+    // Strip the last component from the value and that will give the parent value.
+    $parent = preg_replace('_/((//|[^/])*)$_', '', $value);
+    if (!empty($parent)) {
+      $parents[$value][] = $parent;
+    }
+  }
+  return $parents;
+}
+
+function path_facets_get_field_display_name($field) {
+  // Start with the field name as default, in case no better label is found.
+  $display_name = $field['field_name'];
+  // Find the display name. The first available one, that is.
+  foreach ($field['bundles'] as $entity_type => $bundles) {
+    foreach ($bundles as $bundle_name) {
+      $info = field_info_instance($entity_type, $field['field_name'], $bundle_name);
+      if (isset($info['label'])) {
+        $display_name = $info['label']; // TODO: Localize the label if i18n_string is enabled.
+        break 2; // Found a label. We're done.
+      }
+    }
+  }
+  return $display_name;
+}
+
+/**
+ * Lists the languages supported by a taxonomy term reference field.
+ *
+ * @return
+ *   An array containing the language codes, or an array containing just
+ *   LANGUAGE_NONE if the field references an untranslatable vocabulary.
+ */
+function path_facets_get_taxonomy_term_reference_field_languages($field) {
+  if (module_exists('i18n_taxonomy') && isset($field['settings']['allowed_values'][0]['vocabulary'])) {
+    $vocabulary = taxonomy_vocabulary_machine_name_load($field['settings']['allowed_values'][0]['vocabulary']);
+    if (i18n_taxonomy_vocabulary_mode($vocabulary, I18N_MODE_MULTIPLE)) {
+      return array_keys(locale_language_list('language'));
+    }
+    // TODO: Support I18N_MODE_LANGUAGE to index terms only in their predefined language.
+  }
+  return array(LANGUAGE_NONE);
+}
+
+/**
+ * Escapes a string for use in a path token.
+ */
+function path_facets_escape($string) {
+  // Uses of '/' in term names are escaped as '//'.
+  return str_replace('/', '//', $string);
+}
+
+/**
+ * Unescapes a path token.
+ */
+function path_facets_unescape($string) {
+  return str_replace('//', '/', $string);
+}
+
