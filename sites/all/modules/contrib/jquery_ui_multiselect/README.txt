@@ -4,7 +4,7 @@ README file for the jQuery UI Multiselect module for Drupal
 -- DESCRIPTION --
 
 This module integrates the jQuery UI Multiselect plugin with existing
-list widgets.
+select list field widgets.
 
 The jQuery plugin is demonstrated at:
 http://www.quasipartikel.at/multiselect.
@@ -33,14 +33,28 @@ The advantages of this interface over regular selection lists are:
 -- HOW IT WORKS --
 
 Instead of providing its own Field API widget, this module piggybacks
-on existing widgets through form alter hooks. That helps keep the code
-simple, and free from duplication of widget logic.
+on existing field widgets through form alter hooks. That helps keep
+the code simple, and free from duplication of existing widget logic.
+
+
+-- SUPPORTED FIELDS --
+
+The following fields are currently supported, when configured for the
+"Select list" widget:
+
+* Entity reference
+* Float
+* Integer
+* Term reference
+* Text
 
 
 -- REQUIREMENTS --
 
 * Drupal 7.x
+* jQuery UI Multiselect (jQuery plugin) (https://github.com/crdeutsch/multiselect)
 * jQuery Update (http://drupal.org/project/jquery_update)
+* Libraries API (http://drupal.org/project/libraries)
 * Value is (http://drupal.org/project/value_is)
 
 
@@ -52,9 +66,12 @@ simple, and free from duplication of widget logic.
 
 2. Download the jQuery UI Multiselect plugin from GitHub.
 
-   The original branch is no longer being maintained. I recommend using
-   this fork:
+   The original repository is no longer being updated. I recommend
+   using this fork, which is well maintained:
    https://github.com/crdeutsch/multiselect
+
+   This module actually uses some features from that fork that are not
+   available in the original repository.
 
 3. Install the plugin in your site's libraries directory. Your directory
    structure might look like:
@@ -65,16 +82,9 @@ simple, and free from duplication of widget logic.
 
 5. Enable jQuery UI Multiselect widget on the desired fields. Go to
    the field's settings, expand the jQuery UI Multiselect section, and
-   check "Use jQuery UI Multiselect". This option is offered when the
-   field meets the following conditions:
-
-   * Uses the "Select list" widget
-   AND
-   * Field type is one of:
-     * Float
-     * Integer
-     * Term reference
-     * Text
+   check "Use jQuery UI Multiselect". This option is only offered on
+   supported fields, when the field has been configured to use the
+   "Select list" widget.
   
 
 -- SIMILAR PROJECTS --
@@ -84,9 +94,8 @@ similar functionality.
 
 * http://drupal.org/project/multiselect
 
-  Provides a widget and another type of UI that has some of the
-  advantages of jQuery UI Multiselect. Last time I checked, this
-  module was duplicating big chunks of the core Options module.
+  Provides a field widget and a UI that has some of the advantages of
+  jQuery UI Multiselect.
   
 * http://drupal.org/project/jquery_multiselect
 

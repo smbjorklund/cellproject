@@ -4,11 +4,12 @@ package = User interface
 core = 7.x
 
 dependencies[] = jquery_update
+dependencies[] = libraries
 dependencies[] = value_is
 
-; Information added by drupal.org packaging script on 2012-02-20
-version = "7.x-1.0-alpha1"
+; Information added by Drupal.org packaging script on 2013-12-09
+version = "7.x-1.0"
 core = "7.x"
 project = "jquery_ui_multiselect"
-datestamp = "1329773152"
+datestamp = "1386629305"
 
