@@ -351,7 +351,7 @@ class Updater {
    *   If the chmod should be applied recursively.
    */
   public function makeWorldReadable(&$filetransfer, $path, $recursive = TRUE) {
-    if (!drupal_is_executable($path)) {
+    if (!is_executable($path)) {
       // Set it to read + execute.
       $new_perms = substr(sprintf('%o', fileperms($path)), -4, -1) . "5";
       $filetransfer->chmod($path, intval($new_perms, 8), $recursive);
