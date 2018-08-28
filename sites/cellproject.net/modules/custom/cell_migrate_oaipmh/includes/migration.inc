@@ -30,7 +30,6 @@ class CellMigrateSourceOaiPmh extends MigrateSourceOaiPmh {
     // Register namespaces for row.
     $namespaces = $row->xml->getNamespaces(TRUE);
     foreach ($namespaces as $prefix => $url) {
-      // drush_print_r($url);
       if (empty($prefix)) {
         // XPath does not allow empty prefixes.
         if ($url == 'http://www.loc.gov/mods/v3') {
@@ -254,8 +253,6 @@ class CellNodeMigration extends CellOaiPmhMigration {
     // Note: Xpath queries such as 'metadata/mods:mods/mods:name[1]/mods:namePart'
     // fail with SimpleXMLElement::xpath(), not sure why! Also having trouble
     // querying subnodes. Making ugly code instead.
-
-    // drush_print_r($row);
 
     // Map Primary Creator(s) to field collection.
     $creators = $row->xml->xpath('metadata/mods:mods/mods:name');
