@@ -12,24 +12,17 @@ use Phpoaipmh\Exception\HttpException;
 class CurlAdapter implements HttpAdapterInterface
 {
     /**
-     * @var int  The maximum number of redirects
+     * @var array  CURL Options
      */
-    protected $maxRedirects = 3;
-
-    /**
-     * @var int  Connection timeout
-     */
-    protected $connectTimeout = 10;
-
-    /**
-     * @var int  DNS lookup timeout
-     */
-    protected $dnsCacheTimeout = 10;
-
-    /**
-     * @var int  Response timeout
-     */
-    protected $responseTimeout = 60;
+    private $curlOpts = [
+        CURLOPT_RETURNTRANSFER    => true,
+        CURLOPT_CONNECTTIMEOUT    => 10,
+        CURLOPT_DNS_CACHE_TIMEOUT => 10,
+        CURLOPT_TIMEOUT           => 60,
+        CURLOPT_FOLLOWLOCATION    => true,
+        CURLOPT_MAXREDIRS         => 3,
+        CURLOPT_USERAGENT         => 'PHP OAI-PMH Library',
+    ];
 
     // -------------------------------------------------------------------------
 
@@ -37,12 +30,35 @@ class CurlAdapter implements HttpAdapterInterface
      * Constructor
      *
      * Checks for CURL libraries
+     *
+     * @param array $curlOpts  Array of CURL directives and values (e.g. [CURLOPT_TIMEOUT => 120])
+     * @throws \Exception  If CURL not installed.
      */
-    public function __construct()
+    public function __construct(array $curlOpts = [])
     {
         if (! is_callable('curl_exec')) {
             throw new \Exception("OAI-PMH CurlAdapter HTTP HttpAdapterInterface requires the CURL PHP Extension");
         }
+
+        $this->setCurlOpts($curlOpts);
+    }
+
+    // ---------------------------------------------------------------
+
+    /**
+     * Set cURL Options at runtime
+     *
+     * Sets cURL options.  If $merge is true, then merges desired params with existing.
+     * If $merge is false, then clobbers the existing cURL options
+     *
+     * @param array $opts
+     * @param bool  $merge
+     */
+    public function setCurlOpts(array $opts, $merge = true)
+    {
+        $this->curlOpts = ($merge)
+            ? array_replace($this->curlOpts, $opts)
+            : $opts;
     }
 
     // -------------------------------------------------------------------------
@@ -55,15 +71,13 @@ class CurlAdapter implements HttpAdapterInterface
      */
     public function request($url)
     {
+        $curlOpts = array_replace($this->curlOpts, [CURLOPT_URL => $url]);
+
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
-        curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, $this->dnsCacheTimeout);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $this->responseTimeout);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, $this->maxRedirects);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'PHP OAI-PMH Library');
+        foreach ($curlOpts as $opt => $optVal) {
+            curl_setopt($ch, $opt, $optVal);
+        }
+
         $resp = curl_exec($ch);
         $info = (object) curl_getinfo($ch);
         curl_close($ch);

@@ -35,6 +35,21 @@ class MigrateSourceOaiPmh extends MigrateSource {
   protected $sourceRecords;
 
   /**
+   * The default namespace for the xpath queries.
+   *
+   * For sources which declare a default namespace, it must be made
+   * possible to assign a prefix that namespace in order to use xpath.
+   * This is because not specifying a namespace in xpath is always
+   * interpreted as the 'null namespace', not 'default namespace'.
+   *
+   * @var string
+   *
+   * @see https://secure.php.net/manual/en/simplexmlelement.xpath.php#115957
+   * @see http://www.perlmonks.org/?node_id=530519.
+   */
+  protected $defaultNamespacePrefix;
+
+  /**
    * Source constructor.
    *
    * @param string $url
@@ -46,7 +61,7 @@ class MigrateSourceOaiPmh extends MigrateSource {
    * @param array $options
    *   Options applied to this source.
    */
-  public function __construct($url, $metadata_prefix, $from = NULL, $until = NULL, $set = NULL, array $fields = array(), array $options = array()) {
+  public function __construct($url, $metadata_prefix, $from = NULL, $until = NULL, $set = NULL, $resumption_token = NULL, array $fields = array(), array $options = array()) {
     parent::__construct($options);
 
     $this->sourceUrl = $url;
@@ -54,6 +69,7 @@ class MigrateSourceOaiPmh extends MigrateSource {
     $this->from = $from;
     $this->until = $until;
     $this->set = $set;
+    $this->resumptionToken = $resumption_token;
     $this->fields = $fields;
     $this->options = $options;
 
@@ -66,7 +82,7 @@ class MigrateSourceOaiPmh extends MigrateSource {
     $this->endpoint = new Endpoint($this->client);
 
     // Get a ResponseList object to fetch the source records.
-    $this->sourceRecords = $this->endpoint->listRecords($this->metadataPrefix, $this->from, $this->until, $this->set);
+    $this->sourceRecords = $this->endpoint->listRecords($this->metadataPrefix, $this->from, $this->until, $this->set, $this->resumptionToken);
   }
 
   /**
@@ -101,8 +117,6 @@ class MigrateSourceOaiPmh extends MigrateSource {
    * Implementation of MigrateSource::performRewind().
    */
   public function performRewind() {
-    // Get a new ResponseList object to fetch the reset the source records.
-    $this->sourceRecords->rewind();
   }
 
   /**
@@ -110,19 +124,33 @@ class MigrateSourceOaiPmh extends MigrateSource {
    *
    * Return the next line of the OAI-PMH source as a SimpleXMLElement.
    *
-   * @return SimpleXMLElement
+   * @return object
    *   Data for the next row from the XML source files.
    */
   public function getNextRow() {
     $row = new stdClass();
+    // Store resumptionToken in row when last item in batch is processed.
+    // This can be used to store the resumptionToken in a variable
+    // in prepareRow().
+    $batch = $this->sourceRecords->getBatch();
+    if (count($batch) == 0) {
+      $row->resumptionToken = $this->sourceRecords->getResumptionToken();
+    }
+    // Fetch next item.
     $row->xml = $this->sourceRecords->nextItem();
 
-    // Register namespaces for row.
-    $namespaces = $row->xml->getNamespaces(TRUE);
-    foreach ($namespaces as $prefix => $url) {
-      $row->xml->registerXPathNamespace($prefix, $url);
+    if ($row->xml instanceof SimpleXMLElement) {
+      // Register namespaces for row.
+      $namespaces = $row->xml->getNamespaces(TRUE);
+      foreach ($namespaces as $prefix => $url) {
+        if ($prefix == '' && $this->defaultNamespacePrefix != '') {
+          $prefix = $this->defaultNamespacePrefix;
+        }
+        $row->xml->registerXPathNamespace($prefix, $url);
+      }
+      return $row;
     }
-    return $row;
+    return NULL;
   }
 
   /**
@@ -133,4 +161,19 @@ class MigrateSourceOaiPmh extends MigrateSource {
     // to prevent parent::hash() failing when try to create the hash.
     return parent::hash($row->xml->asXML());
   }
+
+  /**
+   * Get the default namespace for xpath queries.
+   */
+  public function getDefaultNamespacePrefix() {
+    return $this->defaultNamespacePrefix;
+  }
+
+  /**
+   * Set the default namespace for xpath queries.
+   */
+  public function setDefaultNamespacePrefix($prefix) {
+    $this->defaultNamespacePrefix = $prefix;
+  }
+
 }

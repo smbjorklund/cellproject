@@ -26,12 +26,12 @@ use Phpoaipmh\Exception\MalformedResponseException;
  * @author Casey McLaughlin <caseyamcl@gmail.com>
  * @since v2.0
  */
-class RecordIterator implements \Iterator
+class RecordIterator implements \Iterator, RecordIteratorInterface
 {
     /**
      * @var Client
      */
-    private $httpClient;
+    private $oaipmhClient;
 
     /**
      * @var string  The verb to use
@@ -78,29 +78,26 @@ class RecordIterator implements \Iterator
      */
     private $currItem;
 
-    // -------------------------------------------------------------------------
-
     /**
      * Constructor
      *
-     * @param Client $httpClient The client to use
-     * @param string $verb       The verb to use when retrieving results from the client
-     * @param array  $params     Optional parameters passed to OAI-PMH
+     * @param ClientInterface $client  The client to use
+     * @param string          $verb    The verb to use when retrieving results from the client
+     * @param array           $params  Optional parameters passed to OAI-PMH
      */
-    public function __construct(Client $httpClient, $verb, array $params = array())
+    public function __construct(ClientInterface $client, $verb, array $params = array(), $resumptionToken = null)
     {
         //Set parameters
-        $this->httpClient = $httpClient;
-        $this->verb       = $verb;
-        $this->params     = $params;
+        $this->oaipmhClient     = $client;
+        $this->verb             = $verb;
+        $this->params           = $params;
+        $this->resumptionToken  = $resumptionToken;
 
         //Node name error?
         if (! $this->getItemNodeName()) {
             throw new BaseOaipmhException('Cannot determine item name for verb: ' . $this->verb);
         }
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Get the total number of requests made during this run
@@ -112,8 +109,6 @@ class RecordIterator implements \Iterator
         return $this->numRequests;
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * Get the total number of records processed during this run
      *
@@ -124,7 +119,41 @@ class RecordIterator implements \Iterator
         return $this->numProcessed;
     }
 
-    // -------------------------------------------------------------------------
+
+    /**
+     * Get the resumption token if it is specified
+     *
+     * @return null|string
+     */
+    public function getResumptionToken()
+    {
+        return $this->resumptionToken;
+    }
+
+    /**
+     * @return \DateTime|null
+     */
+    public function getExpirationDate()
+    {
+        return $this->expireDate;
+    }
+
+    /**
+     * Get the total number of records in the collection if available
+     *
+     * This only returns a value if the OAI-PMH server provides this information
+     * in the response, which not all servers do (it is optional in the OAI-PMH spec)
+     *
+     * Also, the number of records may change during the requests, so it should
+     * be treated as an estimate
+     *
+     * @return int|null
+     * @deprecated Use `countTotalRecords()`
+     */
+    public function getTotalRecordsInCollection()
+    {
+        return $this->getTotalRecordCount();
+    }
 
     /**
      * Get the total number of records in the collection if available
@@ -137,7 +166,7 @@ class RecordIterator implements \Iterator
      *
      * @return int|null
      */
-    public function getTotalRecordsInCollection()
+    public function getTotalRecordCount()
     {
         if ($this->currItem === null) {
             $this->next();
@@ -146,18 +175,20 @@ class RecordIterator implements \Iterator
         return $this->totalRecordsInCollection;
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * Get the next item
      *
      * Return an item from the currently-retrieved batch, get next batch and
      * return first record from it, or return false if no more records
      *
-     * @return \SimpleXMLElement|boolean
+     * @return \SimpleXMLElement|bool
      */
     public function nextItem()
     {
+        if ($this->batch === null) {
+            $this->batch = [];
+        }
+        
         //If no items in batch, and we have a resumptionToken or need to make initial request...
         if (count($this->batch) == 0 && ($this->resumptionToken or $this->numRequests == 0)) {
             $this->retrieveBatch();
@@ -168,15 +199,13 @@ class RecordIterator implements \Iterator
             $this->numProcessed++;
 
             $item = array_shift($this->batch);
-            $this->currItem = new \SimpleXMLElement($item->asXML());
+            $this->currItem = clone $item;
         } else {
             $this->currItem = false;
         }
 
         return $this->currItem;
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Do a request to get the next batch of items
@@ -196,17 +225,12 @@ class RecordIterator implements \Iterator
         $verb = $this->verb;
 
         //Do it..
-        $resp = $this->httpClient->request($verb, $params);
+        $resp = $this->oaipmhClient->request($verb, $params);
         $this->numRequests++;
 
         //Result format error?
         if (! isset($resp->$verb->$nodeName)) {
             throw new MalformedResponseException(sprintf("Expected XML element list '%s' missing for verb '%s'", $nodeName, $verb));
-        }
-
-        //Process the results
-        foreach ($resp->$verb->$nodeName as $node) {
-            $this->batch[] = $node;
         }
 
         //Set the resumption token and expiration date, if specified in the response
@@ -225,11 +249,14 @@ class RecordIterator implements \Iterator
             $this->resumptionToken = null;
         }
 
+        //Process the results
+        foreach ($resp->$verb->$nodeName as $node) {
+            $this->batch[] = $node;
+        }
+
         //Return a count
         return count($this->batch);
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Get Item Node Name
@@ -251,6 +278,17 @@ class RecordIterator implements \Iterator
     }
 
     // ----------------------------------------------------------------
+    // Leaky abstraction methods
+
+    /**
+     * Get the current batch of records retrieved
+     *
+     * @return array|\SimpleXMLElement[]
+     */
+    public function getBatch()
+    {
+        return $this->batch;
+    }
 
     /**
      * Reset the request state
@@ -269,6 +307,7 @@ class RecordIterator implements \Iterator
     }
 
     // ----------------------------------------------------------------
+    // Iterator methods
 
     public function current()
     {

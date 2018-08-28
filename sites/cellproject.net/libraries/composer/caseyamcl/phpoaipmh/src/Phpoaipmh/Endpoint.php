@@ -17,19 +17,15 @@
 
 namespace Phpoaipmh;
 
-use DateTime;
-
 /**
  * OAI-PMH Endpoint Class
  *
  * @since v1.0
  * @author Casey McLaughlin <caseyamcl@gmail.com>
  */
-class Endpoint
+class Endpoint implements EndpointInterface
 {
     const AUTO = null;
-
-    // ---------------------------------------------------------------
 
     /**
      * @var Client
@@ -41,33 +37,40 @@ class Endpoint
      */
     private $granularity;
 
-    // -------------------------------------------------------------------------
+    /**
+     * Build endpoint using URL and default settings
+     *
+     * @param string $url
+     * @return Endpoint
+     */
+    public static function build($url)
+    {
+        return new Endpoint(new Client($url));
+    }
 
     /**
      * Constructor
      *
-     * @param Client $client       Optional; will attempt to auto-build dependency if not passed
-     * @param string $granularity  Optional; the OAI date format for fetching records, use constants from Granularity class
+     * @param ClientInterface $client       Optional; will attempt to auto-build dependency if not passed
+     * @param string          $granularity  Optional; the OAI date format for fetching records, use constants from
+     *                                      Granularity class
      */
-    public function __construct(Client $client = null, $granularity = self::AUTO)
+    public function __construct(ClientInterface $client = null, $granularity = self::AUTO)
     {
         $this->client = $client ?: new Client();
         $this->granularity = $granularity;
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * Set the URL in the client
      *
      * @param string $url
+     * @deprecated Will be removed in v3.0; build a new Endpoint instance instead
      */
     public function setUrl($url)
     {
         $this->client->setUrl($url);
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Identify the OAI-PMH Endpoint
@@ -81,8 +84,6 @@ class Endpoint
         return $resp;
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * List Metadata Formats
      *
@@ -90,7 +91,7 @@ class Endpoint
      * is provided), or the entire repository (if no arguments are provided)
      *
      * @param  string         $identifier If specified, will return only those metadata formats that a particular record supports
-     * @return RecordIterator
+     * @return RecordIteratorInterface
      */
     public function listMetadataFormats($identifier = null)
     {
@@ -99,19 +100,15 @@ class Endpoint
         return new RecordIterator($this->client, 'ListMetadataFormats', $params);
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * List Record Sets
      *
-     * @return RecordIterator
+     * @return RecordIteratorInterface
      */
     public function listSets()
     {
         return new RecordIterator($this->client, 'ListSets');
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Get a single record
@@ -130,25 +127,22 @@ class Endpoint
         return $this->client->request('GetRecord', $params);
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * List Record identifiers
      *
      * Corresponds to OAI Verb to list record identifiers
      *
      * @param  string         $metadataPrefix Required by OAI-PMH endpoint
-     * @param  \DateTime      $from           An optional 'from' date for selective harvesting
-     * @param  \DateTime      $until          An optional 'until' date for selective harvesting
-     * @param  string         $set            An optional setSpec for selective harvesting
-     * @return RecordIterator
+     * @param  \DateTime      $from             An optional 'from' date for selective harvesting
+     * @param  \DateTime      $until            An optional 'until' date for selective harvesting
+     * @param  string         $set              An optional setSpec for selective harvesting
+     * @param  string         $resumptionToken  An optional resumptionToken for selective harvesting
+     * @return RecordIteratorInterface
      */
-    public function listIdentifiers($metadataPrefix, $from = null, $until = null, $set = null)
+    public function listIdentifiers($metadataPrefix, $from = null, $until = null, $set = null, $resumptionToken = null)
     {
-        return $this->createRecordIterator("ListIdentifiers", $metadataPrefix, $from, $until, $set);
+        return $this->createRecordIterator("ListIdentifiers", $metadataPrefix, $from, $until, $set, $resumptionToken);
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * List Records
@@ -156,30 +150,30 @@ class Endpoint
      * Corresponds to OAI Verb to list records
      *
      * @param  string         $metadataPrefix Required by OAI-PMH endpoint
-     * @param  \DateTime      $from           An optional 'from' date for selective harvesting
-     * @param  \DateTime      $until          An optional 'from' date for selective harvesting
-     * @param  string         $set            An optional setSpec for selective harvesting
-     * @return RecordIterator
+     * @param  \DateTime      $from             An optional 'from' date for selective harvesting
+     * @param  \DateTime      $until            An optional 'from' date for selective harvesting
+     * @param  string         $set              An optional setSpec for selective harvesting
+     * @param  string         $resumptionToken  An optional resumptionToken for selective harvesting
+     * @return RecordIteratorInterface
      */
-    public function listRecords($metadataPrefix, $from = null, $until = null, $set = null)
+    public function listRecords($metadataPrefix, $from = null, $until = null, $set = null, $resumptionToken = null)
     {
-        return $this->createRecordIterator("ListRecords", $metadataPrefix, $from, $until, $set);
+        return $this->createRecordIterator("ListRecords", $metadataPrefix, $from, $until, $set, $resumptionToken);
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Create a record iterator
      *
-     * @param  string         $verb           OAI Verb
-     * @param  string         $metadataPrefix Required by OAI-PMH endpoint
-     * @param  \DateTime      $from           An optional 'from' date for selective harvesting
-     * @param  \DateTime      $until          An optional 'from' date for selective harvesting
-     * @param  string         $set            An optional setSpec for selective harvesting
+     * @param  string         $verb             OAI Verb
+     * @param  string         $metadataPrefix   Required by OAI-PMH endpoint
+     * @param  \DateTime|null $from             An optional 'from' date for selective harvesting
+     * @param  \DateTime|null $until            An optional 'from' date for selective harvesting
+     * @param  string         $set              An optional setSpec for selective harvesting
+     * @param  string         $resumptionToken  An optional resumptionToken for selective harvesting
      *
-     * @return RecordIterator
+     * @return RecordIteratorInterface
      */
-    private function createRecordIterator($verb, $metadataPrefix, $from, $until, $set)
+    private function createRecordIterator($verb, $metadataPrefix, $from, $until, $set, $resumptionToken)
     {
         $params = array('metadataPrefix' => $metadataPrefix);
 
@@ -207,10 +201,8 @@ class Endpoint
             $params['set'] = $set;
         }
 
-        return new RecordIterator($this->client, $verb, $params);
+        return new RecordIterator($this->client, $verb, $params, $resumptionToken);
     }
-
-    // ---------------------------------------------------------------
 
     /**
      * Lazy load granularity from Identify, if not specified
@@ -225,8 +217,6 @@ class Endpoint
 
         return $this->granularity;
     }
-
-    // ---------------------------------------------------------------
 
     /**
      * Attempt to fetch date format from Identify endpoint (or use default)

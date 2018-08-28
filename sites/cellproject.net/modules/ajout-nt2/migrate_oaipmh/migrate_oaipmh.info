@@ -8,9 +8,9 @@ dependencies[] = composer_manager
 
 files[] = includes/oaipmh.inc
 
-; Information added by Drupal.org packaging script on 2014-12-18
+; Information added by Drupal.org packaging script on 2017-03-03
 version = "7.x-1.x-dev"
 core = "7.x"
 project = "migrate_oaipmh"
-datestamp = "1418908082"
+datestamp = "1488560888"
 

@@ -1,6 +1,66 @@
 PHPOAIPMH Changelog
 ===================
 
+## 2.6.1 - 2018-03-07
+
+### Changed
+ - Added Travis CI tests for PHP 7.2
+ - Minor tweaks to `composer.json` dependencies
+
+### Fixed
+ - Ensure support for Symfony 4.x libraries in `composer.json`
+ - Fixed `RcordIterator` bug for PHP 7.2 (thanks @mengidd)
+
+## 2.6 - 2017-07-29
+
+### Added
+ - Added `Endpoint::build($url)` constructor for convenience
+ - Added Travis CI tests for PHP 7.0 and 7.1
+ - Documentation for `RecordIterator::getTotalRecordCount()`
+ - `RecordIterator::getExpirationDate()` method to get record set expiration, if it is supplied by the server
+ - `RecordIteratorInterface` and `ClientInterface`, and updated method signatures
+
+### Changed
+ - Added Symfony v3 library compatibility in `composer.json`
+ - Made Guzzle v6 the default development dependency (v5 still supported)
+ - Updated and fixed a whole bunch of stuff in the README file 
+ - Changed constructor signatures to use new interfaces instead of concrete classes
+
+### Deprecated
+ - Deprecated `RecordIterator::getTotalRecordsInCollection()` in favor of `RecordIterator::getTotalRecordCount()`
+ - `Endpoint::setUrl()` and `Client::setUrl()`.  These should be set in constructor and be immutable.  If URL needs
+   to change, simply create a new instance.
+ 
+### Removed
+ - Removed tests for PHP v5.4 in Travis CI.  It should still work, but is no longer
+   officially supported.
+
+## v2.5.1 - 2016-09-17
+
+### Fixed
+  - Fixed issue where XML namespace settings get lost in the iterator (thanks @vbuch)
+
+## v2.5 - 2016-07-26
+
+### Added
+  - Added new parameter to `Phpoaipmh\EndpointInterface` and `Phpoaipmh\RecordIterator` to allow passing resumption token (thanks @sblommaert)
+  
+### Fixed
+  - Fixed example OAI URL in example implementation code
+
+## v2.4 - 2015-05-18
+
+### Added
+  - Ability to pass custom request parameters at runtime for cURL adapter
+  - Documentation for customizing request parameters in README.md
+
+## v2.3 - 2015-05-05
+
+### Added
+  - Support arbitrary query parameters in `Client` class when making requests (thanks (@scheb)
+  - New `Phpoaipmh\EndpointInterface` to make decorating the Endpoint class easier
+  - Scrutinizer support
+
 ## v2.2 - 2015-03-02
 
 ### Fixed

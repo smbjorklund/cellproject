@@ -31,7 +31,7 @@ use RuntimeException;
  * @since v1.0
  * @author Casey McLaughlin <caseyamcl@gmail.com>
  */
-class Client
+class Client implements ClientInterface
 {
     /**
      * @var string
@@ -42,8 +42,6 @@ class Client
      * @var HttpAdapterInterface
      */
     private $httpClient;
-
-    // -------------------------------------------------------------------------
 
     /**
      * Constructor
@@ -64,19 +62,16 @@ class Client
         }
     }
 
-    // -------------------------------------------------------------------------
-
     /**
      * Set the URL
      *
      * @param string $url
+     * @deprecated Will be removed in v3.0.  Build a new client instance instead
      */
     public function setUrl($url)
     {
         $this->url = $url;
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Perform a request and return a OAI SimpleXML Document
@@ -93,7 +88,7 @@ class Client
 
         //Build the URL
         $params = array_merge(array('verb' => $verb), $params);
-        $url = $this->url . '?' . http_build_query($params);
+        $url = $this->url . (parse_url($this->url, PHP_URL_QUERY) ? '&' : '?') . http_build_query($params);
 
         //Do the request
         try {
@@ -105,8 +100,6 @@ class Client
 
         return $this->decodeResponse($resp);
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Check for OAI-PMH Exception from HTTP Exception
@@ -128,8 +121,6 @@ class Client
 
         throw $httpException;
     }
-
-    // -------------------------------------------------------------------------
 
     /**
      * Decode the response into XML
