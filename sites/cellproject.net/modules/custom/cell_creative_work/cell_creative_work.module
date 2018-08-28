@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the CELL Creative work feature.
+ */
+
+include_once 'cell_creative_work.features.inc';
