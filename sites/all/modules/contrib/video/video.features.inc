@@ -4,15 +4,12 @@
  * Contains code to support the Features module.
  */
 
-// include the preset file
-module_load_include('inc', 'video', 'modules/video_ui/video.preset');
-
 /**
  * Implements hook_features_export_options().
  */
 function video_features_export_options() {
   $options = array();
-  foreach (video_preset_get_presets () as $preset) {
+  foreach (Preset::getAllPresets() as $preset) {
     $options[$preset['name']] = $preset['name'];
   }
   return $options;
@@ -33,8 +30,8 @@ function video_features_export($data, &$export, $module_name = '') {
 function video_features_export_render($module_name, $data) {
   $items = array();
   foreach ($data as $key) {
-    $preset = video_get_preset($key);
-    unset($preset['pid']);
+    $preset = Preset::getPreset($key);
+    unset($preset['pid'], $preset['module'], $preset['overridden']);
     $items[$key] = $preset;
   }
   $code = "  \$items = " . features_var_export($items, '  ') . ";\n";
@@ -48,7 +45,7 @@ function video_features_export_render($module_name, $data) {
 function video_features_revert($module) {
   if ($default_presets = features_get_default('video', $module)) {
     foreach (array_keys($default_presets) as $default_preset) {
-      video_preset_delete($default_preset);
+      Preset::deletePreset($default_preset);
     }
   }
 }

@@ -5,9 +5,9 @@ core = 7.x
 configure = admin/config/media/video
 dependencies[] = video
 
-; Information added by drupal.org packaging script on 2012-09-24
-version = "7.x-2.8"
+; Information added by Drupal.org packaging script on 2017-04-08
+version = "7.x-2.13"
 core = "7.x"
 project = "video"
-datestamp = "1348465200"
+datestamp = "1491658093"
 

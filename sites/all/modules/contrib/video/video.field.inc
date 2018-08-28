@@ -31,8 +31,46 @@ function video_field_info() {
       ),
       'default_widget' => 'video_upload',
       'default_formatter' => 'video_formatter_player',
+      'property_type' => 'field_item_video',
+      'property_callbacks' => array(
+        'entity_metadata_field_file_callback',
+        'video_metadata_field_property_callback',
+      ),
     ),
   );
+}
+
+/**
+ * Property callback for the Entity Metadata framework.
+ */
+function video_metadata_field_property_callback(&$info, $entity_type, $field, $instance, $field_type) {
+
+  $name = $field['field_name'];
+  $property = & $info[$entity_type]['bundles'][$instance['bundle']]['properties'][$name];
+  $property['property info']['thumbnail'] = array(
+    'type' => 'file',
+    'label' => t('The thumbnail file.'),
+    'getter callback' => 'video_entity_metadata_thumbnail_get',
+  );
+
+  $property['property info']['playable_files'] = array(
+    'type' => 'list<file>',
+    'label' => t('The thumbnail file.'),
+    'getter callback' => 'video_entity_metadata_playable_files_get',
+  );
+
+}
+
+function video_entity_metadata_thumbnail_get($item) {
+  return $item['thumbnail'];
+}
+
+function video_entity_metadata_playable_files_get($item) {
+  $fid_list = array();
+  foreach ($item['playablefiles'] as $file) {
+    $fid_list[] = $file->fid;
+  }
+  return $fid_list;
 }
 
 /**
@@ -41,6 +79,7 @@ function video_field_info() {
 function video_field_settings_form($field, $instance, $has_data) {
   $transcoder = new Transcoder();
   $hastranscoder = $transcoder->hasTranscoder();
+  $default_file_scheme = variable_get('file_default_scheme', 'public');
 
   $defaults = field_info_field_settings($field['type']);
   $settings = array_merge($defaults, $field['settings']);
@@ -120,8 +159,12 @@ function video_field_settings_form($field, $instance, $has_data) {
     'no' => 'Don\'t create thumbnail',
   );
 
+  // When there is no transcoder, the auto option is not available and should not be the default.
   if (!$hastranscoder) {
     unset($thumb_options['auto']);
+    if (!isset($settings['autothumbnail']) || $settings['autothumbnail'] == 'auto') {
+      $settings['autothumbnail'] = 'no';
+    }
   }
 
   $form['autothumbnail'] = array(
@@ -129,7 +172,7 @@ function video_field_settings_form($field, $instance, $has_data) {
     '#title' => t('Video thumbnails'),
     '#options' => $thumb_options,
     '#description' => t('If you choose <i>Automatically extract thumbnails from video</i> then please make sure to configure your !settings to make this work properly.', array('!settings' => l(t('transcoder settings'), 'admin/config/media/video/transcoders'))),
-    '#default_value' => isset($settings['autothumbnail']) ? $settings['autothumbnail'] : 'no',
+    '#default_value' => isset($settings['autothumbnail']) ? $settings['autothumbnail'] : 'auto',
   );
 
   $form['default_video_thumbnail'] = array(
@@ -138,7 +181,7 @@ function video_field_settings_form($field, $instance, $has_data) {
     '#element_validate' => array('video_field_default_thumbnail_validate'),
     '#description' => t('You can use a default thumbnail for all videos or videos from which a thumbnail can\'t be extracted. Settings to use default video thumbnails will be available on node edit. You can change the permissions for other users too.'),
     '#default_value' => !empty($settings['default_video_thumbnail']['fid']) ? $settings['default_video_thumbnail']['fid'] : '',
-    '#upload_location' => 'public://videos/thumbnails/default',
+    '#upload_location' => $default_file_scheme . '://videos/thumbnails/default',
   );
 
   $form['preview_video_thumb_style'] = array(
@@ -150,9 +193,8 @@ function video_field_settings_form($field, $instance, $has_data) {
     '#description' => t('This image style will be used to show extracted video thumbnails on video node edit. Extracted thumbnail preview will also use this style.'),
   );
 
-  module_load_include('inc', 'video_ui', 'video.preset');
   $selectedpresets = array_filter(variable_get('video_preset', array()));
-  $presets = video_preset_get_presets();
+  $presets = Preset::getAllPresets();
   $presetnames = array();
   foreach ($presets as $preset) {
     $presetnames[$preset['name']] = $preset['name'];
@@ -258,16 +300,24 @@ function video_field_load($entity_type, $entities, $field, $instances, $langcode
       if (empty($item) || empty($item['fid'])) {
         continue;
       }
+
       // Check whether transcoding is enabled for this file
       if (isset($queues[$item['fid']])) {
+        $items[$id][$delta]['fid'] = intval($item['fid']);
+        $items[$id][$delta]['timestamp'] = intval($item['timestamp']);
+        $items[$id][$delta]['filesize'] = intval($item['filesize']);
+        $items[$id][$delta]['uid'] = intval($item['uid']);
+        $items[$id][$delta]['thumbnail'] = intval($item['thumbnail']);
+        $items[$id][$delta]['status'] = intval($item['status']);
         $items[$id][$delta]['autoconversion'] = TRUE;
         $items[$id][$delta]['conversioncompleted'] = $queues[$item['fid']]->status == VIDEO_RENDERING_COMPLETE;
-        $items[$id][$delta]['conversionstatus'] = $queues[$item['fid']]->status;
+        $items[$id][$delta]['conversionstatus'] = intval($queues[$item['fid']]->status);
+        $items[$id][$delta]['duration'] = intval($queues[$item['fid']]->duration);
 
         // Load converted files
         $items[$id][$delta]['playablefiles'] = array();
         foreach ($outputs as $outputfid => $output) {
-          if ($output->original_fid == $items[$id][$delta]['fid'] && isset($files[$outputfid]) && $files[$outputfid]->filesize > 0) {
+          if ($output->original_fid == $items[$id][$delta]['fid'] && isset($files[$outputfid])) {
             $conv = (array)$files[$outputfid] + (array)$output;
             $items[$id][$delta]['playablefiles'][] = (object)$conv;
           }
@@ -282,6 +332,7 @@ function video_field_load($entity_type, $entities, $field, $instances, $langcode
       else {
         $items[$id][$delta]['playablefiles'] = array((object)$items[$id][$delta]);
         $items[$id][$delta]['autoconversion'] = FALSE;
+        $items[$id][$delta]['duration'] = NULL;
       }
 
       // Load thumbnail
@@ -290,6 +341,7 @@ function video_field_load($entity_type, $entities, $field, $instances, $langcode
         $items[$id][$delta]['thumbnailfile'] = NULL;
       }
       else {
+        $items[$id][$delta]['thumbnail'] = intval($item['thumbnail']);
         $items[$id][$delta]['thumbnailfile'] = $files[$item['thumbnail']];
       }
     }
@@ -577,12 +629,15 @@ function video_field_widget_form(&$form, &$form_state, $field, $instance, $langc
   // Add display_field setting to field because file_field_widget_form() assumes it is set.
   $field['settings']['display_field'] = 0;
 
+  if (module_exists('filefield_role_limit')) {
+    filefield_role_limit_file_field_process($element, $form_state, $form);
+  }
   $elements = file_field_widget_form($form, $form_state, $field, $instance, $langcode, $items, $delta, $element);
   $settings = $instance['settings'];
 
   foreach (element_children($elements) as $delta) {
     // If not using custom extension validation, ensure this is an video.
-    $supported_extensions = array_keys(video_utility::getVideoExtensions());
+    $supported_extensions = video_utility::getMediaExtensions();
     $extensions = isset($elements[$delta]['#upload_validators']['file_validate_extensions'][0]) ? $elements[$delta]['#upload_validators']['file_validate_extensions'][0] : implode(' ', $supported_extensions);
     $extensions = array_intersect(explode(' ', $extensions), $supported_extensions);
     $elements[$delta]['#upload_validators']['file_validate_extensions'][0] = implode(' ', $extensions);
@@ -616,10 +671,21 @@ function video_field_widget_form(&$form, &$form_state, $field, $instance, $langc
  * The #value_callback for the video field element.
  *
  * This function loads additional information related to the video to be used in
- * video_widget_element_settings().
+ * video_field_widget_process().
  */
 function video_field_widget_value($element, $input = FALSE, $form_state) {
+  // file_field_widget_value() also takes care of adding $input to $value.
   $value = file_field_widget_value($element, $input, $form_state);
+
+  // Extra default values.
+  $value += array(
+    'bypass_autoconversion' => variable_get('video_bypass_conversion', FALSE),
+    'convert_video_on_save' => variable_get('video_convert_on_save', FALSE),
+    'use_default_video_thumb' => variable_get('video_use_default_thumb', FALSE),
+    'conversionstatus' => NULL,
+    'fid' => 0,
+    'thumbnail' => 0,
+  );
 
   if ($value['fid'] > 0) {
     $transcoder = new Transcoder();
@@ -627,14 +693,61 @@ function video_field_widget_value($element, $input = FALSE, $form_state) {
       $video = video_jobs::load($value['fid']);
 
       if ($video) {
-        $value['dimensions'] = $video->dimensions;
+      	// The dimensions may have been set from input, so check first to not
+      	// overwrite a change by the user.
+      	if (empty($value['dimensions'])) {
+          $value['dimensions'] = $video->dimensions;
+      	}
         $value['conversionstatus'] = $video->video_status;
+        // When there is a job, unselect "Bypass auto conversion" because it
+        // would remove the converted files.
+        $value['bypass_autoconversion'] = 0;
+      }
+      else {
+        // No job (yet), find the video dimensions to use as default.
+        if (empty($value['dimensions'])) {
+          $video_ratio = _video_aspect_ratio($value);
+
+          if (!empty($video_ratio['width']) && !empty($video_ratio['height'])) {
+            $filedimensions = $video_ratio['width'] . 'x' . $video_ratio['height'];
+            $alldimensions = video_utility::getDimensions();
+            if (in_array($filedimensions, $alldimensions)) {
+              $value['dimensions'] = $filedimensions;
+            }
+          }
+        }
+
+        // If there is no job, it might be because the user selected
+        // "bypass autoconversion" previously. When the file is permanent,
+        // this probably was the case.
+        if (isset($value['status']) && $value['status'] == FILE_STATUS_PERMANENT) {
+          $value['bypass_autoconversion'] = 1;
+        }
       }
     }
   }
 
-  if ($input && !empty($input['dimensions'])) {
-    $value['dimensions'] = $input['dimensions'];
+  // Find the values for thumbnail and use_default_video_thumb.
+  if (!empty($value['thumbnailfile']) && !empty($value['thumbnailfile']->fid)) {
+    $value['thumbnail'] = $value['thumbnailfile']->fid;
+    $field = field_widget_field($element, $form_state);
+    if (!empty($field['settings']['default_video_thumbnail']['fid'])) {
+      if ($field['settings']['default_video_thumbnail']['fid'] == $value['thumbnail']) {
+        $value['use_default_video_thumb'] = 1;
+      }
+    }
+  }
+
+  // Load the default dimensions when there is no file or input.
+  if (empty($value['dimensions'])) {
+  	$alldimensions = video_utility::getDimensions();
+    $instance = field_widget_instance($element, $form_state);
+    if (in_array($instance['settings']['default_dimensions'], $alldimensions)) {
+      $value['dimensions'] = $instance['settings']['default_dimensions'];
+    }
+    else {
+      $value['dimensions'] = key($alldimensions);
+    }
   }
 
   return $value;
@@ -644,8 +757,8 @@ function video_field_widget_value($element, $input = FALSE, $form_state) {
  * An element #process callback for the video field type.
  */
 function video_field_widget_process($element, &$form_state, $form) {
-  $item = $element['#value'];
-  $item['fid'] = $element['fid']['#value'];
+  $file = $element['#value'];
+  $file['fid'] = $fid = intval($element['fid']['#value']);
   $field = field_widget_field($element, $form_state);
 
   $element['#theme'] = 'video_widget';
@@ -656,220 +769,164 @@ function video_field_widget_process($element, &$form_state, $form) {
   }
 
   // Add our extra fields if in preview mode
-  if (empty($item['fid'])) {
+  if (empty($file['fid'])) {
     return $element;
   }
 
-  video_widget_element_settings($element, $form_state, $field);
-  video_thumb_process($element, $form_state, $field);
-
-  return $element;
-}
-
-/**
- * Adds a preview of thumbnails for you to select when uploading videos.
- */
-function video_thumb_process(array &$element, array &$form_state, array $field) {
-  $file = $element['#value'];
-  $fid = intval($file['fid']);
-  $defaultthumbfid = isset($field['settings']['default_video_thumbnail']) ? intval($field['settings']['default_video_thumbnail']['fid']) : 0;
-  $thumbnailfid = !isset($file['thumbnail']) ? 0 : (is_array($file['thumbnail']) ? intval($file['thumbnail']['fid']) : intval($file['thumbnail']));
-
-  if ($fid != 0) {
-    $gen_fail = FALSE;
-
-    if ($field['settings']['autothumbnail'] == 'auto') {
-      $transcoder = new Transcoder();
-      $thumbs = $transcoder->extractFrames($file, $field);
-      $thumbstyle = !empty($field['settings']['preview_video_thumb_style']) ? $field['settings']['preview_video_thumb_style'] : 'thumbnail';
-
-      if (!empty($thumbs)) {
-        $thumbss = array();
-        foreach ($thumbs as $img) {
-          $thumbss[$img->fid] = theme('image_style', array('style_name' => $thumbstyle, 'path' => $img->uri));
-        }
-
-        if ($thumbnailfid > 0 && isset($thumbss[$thumbnailfid])) {
-          $currentthumb = $thumbnailfid;
-        }
-        else {
-          $currentthumb = array_rand($thumbss);
-        }
-
-        $element['thumbnail'] = array(
-          '#type' => 'radios',
-          '#title' => t('Video thumbnail'),
-          '#options' => $thumbss,
-          '#default_value' => $currentthumb,
-          '#weight' => 10,
-          '#attributes' => array('class' => array('video-thumbnails'), 'onchange' => 'Drupal.behaviors.videoEdit()', 'rel' => 'video_large_thumbnail-' . $fid),
-        );
-      }
-      elseif ($thumbs === FALSE) {
-        $gen_fail = TRUE;
-      }
-    }
-
-    if ($gen_fail || $field['settings']['autothumbnail'] == 'manual_upload') {
-      $file += (array) file_load($fid);
-      $scheme = isset($field['settings']['uri_scheme_thumbnails']) ? $field['settings']['uri_scheme_thumbnails'] : 'public';
-      $element['thumbnail'] = array(
-        '#title' => t('Video thumbnail'),
-        '#type' => 'managed_file',
-        '#description' => t('The uploaded image will be used as video thumbnail on this video.'),
-        '#default_value' => NULL,
-        '#upload_location' => $scheme . '://' . variable_get('video_thumbnail_path', 'videos/thumbnails') . '/' . $fid,
-        '#weight' => 10,
-      );
-
-      // Set the current thumbnail fid, if it is not the default one
-      if ($thumbnailfid > 0) {
-        if ($defaultthumbfid == 0 || $thumbnailfid != $defaultthumbfid) {
-          $element['thumbnail']['#default_value'] = $thumbnailfid;
-        }
-        else {
-          // Unset the form_state value for the thumbnail field if it is the default thumbnail.
-          // This prevents the "may not be referenced" error.
-          form_set_value($element, NULL, $form_state);
-        }
-      }
-    }
-
-    // Setup our large thumbnail that is on the left.
-    if (!empty($field['settings']['preview_video_thumb_style'])) {
-      $large_thumb = NULL;
-      if (!empty($currentthumb)) {
-        $large_thumb = file_load($currentthumb);
-      }
-      elseif ($thumbnailfid > 0) {
-        $large_thumb = file_load($thumbnailfid);
-      }
-      elseif ($defaultthumbfid > 0) {
-        $large_thumb = file_load($defaultthumbfid);
-      }
-
-      if (!empty($large_thumb)) {
-        $element['preview']['#markup'] = '<div class="video-preview video_large_thumbnail-' . $fid . '">' . theme('image_style', array('style_name' => $field['settings']['preview_video_thumb_style'], 'path' => $large_thumb->uri)) . '</div>';
-      }
-    }
-  }
-}
-
-/**
- * Process elements loads on settings
- */
-function video_widget_element_settings(array &$element, array &$form_state, array $field) {
   $transcoder = new Transcoder();
 
-  $file = $element['#value'];
-  $delta = $element['#delta'];
-
-  $instance = field_widget_instance($element, $form_state);
-  $dimensions = $instance['settings']['default_dimensions'];
-  $default_dimensions = user_access('override player dimensions');
-  $autoconversion = !empty($field['settings']['autoconversion']) && $transcoder->hasTranscoder();
-
-  $description = t('Set the size of the converted video.');
-  $options = video_utility::getDimensions();
-  if ($autoconversion && $file['fid'] != 0 && $default_dimensions) {
-    $file_object = file_load($file['fid']);
-    $video_info = _video_dimensions_options($options, $file_object);
+  // Various settings.
+  if (!empty($field['settings']['autoconversion']) && $transcoder->hasTranscoder()) {
+    $description = t('Set the size of the converted video.');
+    $options = video_utility::getDimensions();
+    $video_info = _video_dimensions_options($options, $file);
     if (!empty($video_info['width']) && !empty($video_info['height'])) {
-      $dimensions = $video_info['width'] . 'x' . $video_info['height'];
-      $description .= ' ' . t('The original video size is %size. If you choose a higher resolution, this could cause video distortion. You are shown dimensions that match your aspect ratio, if you choose dimensions that do not match your ratio, black bars will be added to maintain the original aspect ratio.', array('%size' => $dimensions));
+      $description .= ' ' . t('The original video size is %size. If you choose a higher resolution, this could cause video distortion. You are shown dimensions that match your aspect ratio, if you choose dimensions that do not match your ratio, black bars will be added to maintain the original aspect ratio.', array('%size' => $video_info['width'] . 'x' . $video_info['height']));
     }
-  }
 
-  // Override our dimensions to the user selected.
-  if (!empty($file['dimensions'])) {
-    $dimensions = $file['dimensions'];
-  }
-
-  // show only enabled the autoconversion
-  if ($autoconversion) {
+    // Dimensions dropdown.
     $element['dimensions'] = array(
       '#type' => 'select',
       '#title' => t('Output video dimensions'),
-      '#default_value' => $dimensions,
+      '#default_value' => $file['dimensions'],
       '#description' => $description,
       '#options' => $options,
+      '#access' => user_access('override player dimensions'),
     );
-  }
-  // If users cannot change the default dimensions, lets change this to a value.
-  if (!$default_dimensions) {
-    $element['dimensions']['#type'] = 'value';
-    $element['dimensions']['#value'] = $dimensions;
-  }
 
-  // only in preview mode and then create thumbnails
-  if ($autoconversion) {
-    // check if already converted or failed
-    if (user_access('re convert video') && isset($file['conversionstatus']) && ($file['conversionstatus'] == VIDEO_RENDERING_COMPLETE || $file['conversionstatus'] == VIDEO_RENDERING_FAILED)) {
+    // hide dimensions when video_use_preset_wxh is true
+    if (variable_get('video_use_preset_wxh', FALSE)) {
+      $element['dimensions']['#access'] = FALSE;
+    }
+
+    if (!empty($file['conversionstatus']) && ($file['conversionstatus'] == VIDEO_RENDERING_COMPLETE || $file['conversionstatus'] == VIDEO_RENDERING_FAILED)) {
       $status = array(VIDEO_RENDERING_COMPLETE => 'was successful', VIDEO_RENDERING_FAILED => 'failed');
       $element['re_convert_video'] = array(
         '#type' => 'checkbox',
         '#title' => t('Video conversion ' . $status[$file['conversionstatus']] . '. Re-queue video conversion?'),
         '#description' => t('This will re-convert your video and schedule it for cron, unless you also check “convert video on save,” below.'),
         '#attributes' => array('class' => array('video-re-convert', 'video-' . $file['conversionstatus'])),
+        '#access' => user_access('re convert video'),
       );
     }
-    if (user_access('bypass conversion video')) {
-      $element['bypass_autoconversion'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Bypass auto conversion'),
-        '#default_value' => isset($file['bypass_autoconversion']) ? $file['bypass_autoconversion'] : variable_get('video_bypass_conversion', FALSE),
-        '#description' => t('This video will not convert your video when you save, and it will not be scheduled for cron.'),
-        '#attributes' => array('class' => array('video-bypass-auto-conversion')),
+
+    // Bypass conversion checkbox.
+    $element['bypass_autoconversion'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Bypass auto conversion'),
+      '#default_value' => $file['bypass_autoconversion'],
+      '#description' => t('This video will not convert your video when you save, and it will not be scheduled for cron.'),
+      '#attributes' => array('class' => array('video-bypass-auto-conversion')),
+      '#access' => user_access('bypass conversion video'),
+    );
+
+    // Convert on save checkbox.
+    $element['convert_video_on_save'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Convert video on save'),
+      '#default_value' => $file['convert_video_on_save'],
+      '#description' => t('This will convert your video on save, instead of scheduling it for cron.'),
+      '#attributes' => array('class' => array('video-convert-video-on-save')),
+      '#access' => user_access('convert on submission'),
+    );
+  }
+
+  // Use of default thumbnail checkbox.
+  if (!empty($field['settings']['default_video_thumbnail']['fid'])) {
+    $element['use_default_video_thumb'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Use the default thumbnail for this video'),
+      '#default_value' => $file['use_default_video_thumb'],
+      '#description' => t('This will set a flag for this video to use the default video thumbnail when output.'),
+      '#attributes' => array(
+        'class' => array('video-use-default-video-thumb'),
+        'data-defaultimage' => image_style_url($field['settings']['preview_video_thumb_style'], $field['settings']['default_video_thumbnail']['uri']),
+      ),
+      '#access' => user_access('use default thumb'),
+    );
+  }
+
+  // Thumbnails.
+  $defaultthumbfid = isset($field['settings']['default_video_thumbnail']) ? intval($field['settings']['default_video_thumbnail']['fid']) : 0;
+  $thumbnailfid = is_array($file['thumbnail']) ? intval($file['thumbnail']['fid']) : intval($file['thumbnail']);
+
+  $gen_fail = FALSE;
+
+  if ($field['settings']['autothumbnail'] == 'auto' && $transcoder->hasTranscoder()) {
+    $thumbs = $transcoder->extractFrames($file, $field);
+    $thumbstyle = !empty($field['settings']['preview_video_thumb_style']) ? $field['settings']['preview_video_thumb_style'] : 'thumbnail';
+
+    if (!empty($thumbs)) {
+      $thumbss = array();
+      foreach ($thumbs as $img) {
+        $thumbss[$img->fid] = theme('image_style', array('style_name' => $thumbstyle, 'path' => $img->uri));
+      }
+
+      $currentthumb = 0;
+      if ($thumbnailfid > 0 && isset($thumbss[$thumbnailfid])) {
+        $currentthumb = $thumbnailfid;
+      }
+      elseif ($thumbnailfid != $defaultthumbfid) {
+        $currentthumb = array_rand($thumbss);
+      }
+
+      $element['thumbnail'] = array(
+        '#type' => 'radios',
+        '#title' => t('Video thumbnail'),
+        '#options' => $thumbss,
+        '#default_value' => $currentthumb,
+        '#weight' => 10,
+        '#attributes' => array('class' => array('video-thumbnails')),
       );
     }
-    elseif (variable_get('video_bypass_conversion', FALSE)) {
-      $element['bypass_autoconversion'] = array(
-        '#type' => 'value',
-        '#value' => variable_get('video_bypass_conversion', FALSE),
-      );
-    }
-    // check this to convert the video on save
-    if (user_access('convert on submission')) {
-      $element['convert_video_on_save'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Convert video on save'),
-        '#default_value' => variable_get('video_convert_on_save', FALSE),
-        '#description' => t('This will convert your video on save, instead of scheduling it for cron.'),
-        '#attributes' => array('class' => array('video-convert-video-on-save')),
-      );
-    }
-    elseif (variable_get('video_convert_on_save', FALSE)) {
-      $element['convert_video_on_save'] = array(
-        '#type' => 'value',
-        '#value' => variable_get('video_convert_on_save', FALSE),
-      );
+    elseif ($thumbs === FALSE) {
+      $gen_fail = TRUE;
     }
   }
 
-  // use of default thumbnail
-  if (!empty($field['settings']['default_video_thumbnail']['fid'])) {
-    $defaultfid = $field['settings']['default_video_thumbnail']['fid'];
+  if ($gen_fail || $field['settings']['autothumbnail'] == 'manual_upload') {
+    $scheme = isset($field['settings']['uri_scheme_thumbnails']) ? $field['settings']['uri_scheme_thumbnails'] : 'public';
+    $element['thumbnail'] = array(
+      '#title' => t('Video thumbnail'),
+      '#type' => 'managed_file',
+      '#description' => t('The uploaded image will be used as video thumbnail on this video.'),
+      '#default_value' => NULL,
+      '#upload_location' => $scheme . '://' . variable_get('video_thumbnail_path', 'videos/thumbnails') . '/' . $fid,
+      '#weight' => 10,
+    );
 
-    $default_thumb = (isset($file['thumbnail']) && $defaultfid == $file['thumbnail']) || variable_get('video_use_default_thumb', FALSE);
-    if (user_access('use default thumb')) {
-      $element['use_default_video_thumb'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Use the default thumbnail for this video'),
-        '#default_value' => $default_thumb,
-        '#description' => t('This will set a flag for this video to use the default video thumbnail when output.'),
-        '#attributes' => array('class' => array('video-use-default-video-thumb')),
-      );
-      if ($default_thumb) {
-        $element['use_default_video_thumb']['#attributes']['checked'] = 'checked';
+    // Set the current thumbnail fid, if it is not the default one
+    if ($thumbnailfid > 0) {
+      if ($defaultthumbfid == 0 || $thumbnailfid != $defaultthumbfid) {
+        $element['thumbnail']['#default_value'] = $thumbnailfid;
+      }
+      else {
+        // Unset the form_state value for the thumbnail field if it is the default thumbnail.
+        // This prevents the "may not be referenced" error.
+        form_set_value($element, NULL, $form_state);
       }
     }
-    else {
-      $element['use_default_video_thumb'] = array(
-        '#type' => 'value',
-        '#value' => $default_thumb,
-      );
+  }
+
+  // Setup our large thumbnail that is on the left.
+  if (!empty($field['settings']['preview_video_thumb_style'])) {
+    $large_thumb = NULL;
+    if (!empty($currentthumb)) {
+      $large_thumb = file_load($currentthumb);
+    }
+    elseif ($thumbnailfid > 0) {
+      $large_thumb = file_load($thumbnailfid);
+    }
+    elseif ($defaultthumbfid > 0) {
+      $large_thumb = file_load($defaultthumbfid);
+    }
+
+    if (!empty($large_thumb)) {
+      $element['preview']['#markup'] = '<div class="video-preview video_large_thumbnail-' . $fid . '">' . theme('image_style', array('style_name' => $field['settings']['preview_video_thumb_style'], 'path' => $large_thumb->uri)) . '</div>';
     }
   }
+
+  return $element;
 }
 
 /**
@@ -948,6 +1005,15 @@ function video_field_formatter_info() {
       'settings' => array(
         'image_style' => '',
         'image_link' => '',
+        'widthxheight' => '640x360',
+      ),
+    ),
+    'video_formatter_url' => array(
+      'label' => t('Video url'),
+      'field types' => array('video'),
+      'settings' => array(
+        'video_extension' => '',
+        'link_title' => '',
       ),
     ),
   );
@@ -981,6 +1047,21 @@ function video_field_formatter_settings_form($field, $instance, $view_mode, $for
           'file' => t('File'),
         ),
       );
+      if (module_exists('colorbox')) {
+        $element['image_link']['#options']['colorbox'] = t('Colorbox');
+        $element['widthxheight'] = array(
+          '#title' => t('Video Player Dimensions'),
+          '#type' => 'select',
+          '#default_value' => $settings['widthxheight'],
+          '#description' => t('Select the desired dimensions of the video player. You can add your own dimensions at !settings.', array('!settings' => l(t('video module settings'), 'admin/config/media/video'))),
+          '#options' => video_utility::getDimensions(),
+          '#states' => array(
+            'visible' => array(
+              'input[name="options[settings][image_link]"]' => array('value' => 'colorbox'),
+            ),
+          ),
+        );
+      }
       break;
 
     case 'video_formatter_player':
@@ -999,6 +1080,30 @@ function video_field_formatter_settings_form($field, $instance, $view_mode, $for
         '#empty_option' => t('None (original image)'),
         '#description' => t('The original video thumbnail will be displayed. Otherwise, you can add a custom image style at !settings.', array('!settings' => l(t('media image styles'), 'admin/config/media/image-styles'))),
         '#options' => $image_styles,
+      );
+      break;
+      
+	case 'video_formatter_url':
+      // Get the transcoder presets
+      $presets = variable_get('video_preset');
+      $preset_extensions = array('original' => t('Original video format'));      
+      foreach ($presets as $preset){
+        $preset_settings = video_get_preset($preset);
+        $preset_extensions[$preset_settings['settings']['video_extension']] = $preset_settings['settings']['video_extension'];
+      }
+      
+      $element['video_extension'] = array(
+        '#title' => t('Video format'),
+        '#type' => 'select',
+        '#default_value' => $settings['video_extension'],
+        '#options' => $preset_extensions,
+      );
+      
+      $element['link_title'] = array(
+        '#title' => t('Link title'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['link_title'],
+        '#description' => t('Leave this blank to use the url to the file'),
       );
       break;
   }
@@ -1031,7 +1136,9 @@ function video_field_formatter_settings_summary($field, $instance, $view_mode) {
       $link_types = array(
         'content' => t('Linked to content'),
         'file' => t('Linked to video file'),
+        'colorbox' => t('Linked to Colorbox overlay')
       );
+
       // Display this setting only if image is linked.
       if (isset($link_types[$settings['image_link']])) {
         $summary[] = $link_types[$settings['image_link']];
@@ -1043,6 +1150,11 @@ function video_field_formatter_settings_summary($field, $instance, $view_mode) {
       if (isset($image_styles[$settings['poster_image_style']])) {
         $summary[] = t('Poster image style: @style', array('@style' => $image_styles[$settings['poster_image_style']]));
       }
+      break;
+
+	case 'video_formatter_url':
+      $format = !empty($settings['video_extension']) ? t('transcoded ' . strtoupper($settings['video_extension']) . ' file') : 'Original file';
+      $summary[] = t('URL to @format', array('@format' => $format));
       break;
   }
 
@@ -1064,14 +1176,25 @@ function video_field_formatter_view($entity_type, $entity, $field, $instance, $l
           $uri = entity_uri($entity_type, $entity);
         }
         elseif ($settings['image_link'] == 'file') {
-          $link_file = TRUE;
-        }
-        if (isset($link_file)) {
           $uri = array(
             'path' => file_create_url($item['uri']),
             'options' => array(),
           );
         }
+        elseif ($settings['image_link'] == 'colorbox') {
+          list($entity_id, $rev, $bundle) = entity_extract_ids($entity_type, $entity);
+
+          // Convert to a URL friendly version, and remove "field_" prefix for brevity.
+          $field_path = preg_replace(array('/^field_/', '/_/'), array('', '-'), $field['field_name']);
+          $field_path = "{$entity_type}/{$entity_id}/{$field_path}";
+
+          $dimensions = explode('x', $settings['widthxheight']);
+          $uri = array(
+            'path' => 'video/embed/'. $field_path . '/' . str_replace('x', '/',$settings['widthxheight']),
+            'options' => array('query' => array('width' => $dimensions[0], 'height' => $dimensions[1] + 10, 'iframe' => 'true'))
+          );
+       }
+
         $element[$delta] = array(
           '#theme' => 'video_formatter_thumbnail',
           '#item' => $item,
@@ -1080,7 +1203,8 @@ function video_field_formatter_view($entity_type, $entity, $field, $instance, $l
           '#entity' => $entity,
           '#entity_type' => $entity_type,
           '#field' => $field,
-          '#instance' => $instance
+          '#instance' => $instance,
+          '#colorbox' => $settings['image_link'] == 'colorbox',
         );
         break;
 
@@ -1096,6 +1220,42 @@ function video_field_formatter_view($entity_type, $entity, $field, $instance, $l
           '#poster_image_style' => $settings['poster_image_style'],
         );
         break;
+      case 'video_formatter_url':
+        // If the original file is selected then we just return that
+        if ($settings['video_extension'] == 'original'){
+          $title = empty($settings['link_title']) ?  file_create_url($item['uri']) : $settings['link_title'];
+          $element[$delta] = array(
+            '#markup' => l($title, file_create_url($item['uri'])),
+            );
+            break;            
+        }
+      
+        // Nobody believes in standards
+        // @TODO revisit this, there must be a better way to replace the mimetypes
+        $extensions_fix = array('flv' => 'x-flv');
+        if (!empty($extensions_fix[$settings['video_extension']])){
+          $extension = $extensions_fix[$settings['video_extension']];
+        } else {
+          $extension = $settings['video_extension'];
+        }
+
+        $title = empty($settings['link_title']) ? NULL : $settings['link_title'];
+        
+        // Find the file based on the selected video type
+        foreach ($item['playablefiles'] as $file){
+          if (strstr($file->filemime, 'video/' . $extension)) {
+            $file_url = file_create_url($file->uri);
+            // Set the title to the filename if it's not set
+            if (empty($title)) $title = file_create_url($file->uri);
+            // Stop looking (shouldn't break out of switch)
+            //break;
+          }
+        }
+
+        $element[$delta] = array(
+          '#markup' => empty($item['uri']) ? '' : l($title, $item['uri']),
+          );
+	    break;
     }
   }
 
@@ -1107,6 +1267,15 @@ function video_field_formatter_view($entity_type, $entity, $field, $instance, $l
  */
 function video_filefield_sources_widgets() {
   return array('video_upload');
+}
+
+/**
+ * Implements hook_filefield_role_limit_supported_widgets_alter().
+ *
+ * Add the video field to the list of supported FileField Role Limit widgets.
+ */
+function video_filefield_role_limit_supported_widgets_alter(&$types) {
+  $types[] = 'video_upload';
 }
 
 /**
@@ -1134,15 +1303,37 @@ function _video_field_file_autoconversion($entity_type, $entity, $field, $instan
     // Create the job if it doesn't exist
     if (!$video) {
       list($entity_id, $entity_vid, $bundle) = entity_extract_ids($entity_type, $entity);
-      // @todo get the default dimension when not available in $item
+      // get the default dimension when not available in $item
+      $info_instance = field_info_instance('node', $field['field_name'], $bundle);
+      if (empty($item['dimensions'])) {
+            $item['dimensions'] = $info_instance['settings']['default_dimensions'];
+          }
       if (!video_jobs::create($item['fid'], $item['dimensions'], $entity_id, $entity_type, $field['field_name'], $langcode, $delta)) {
         drupal_set_message(t('Something went wrong with your video job creation. Please check your recent log entries for further debugging.'), 'error');
         return;
       }
       // Load a fresh copy of the job
       $video = video_jobs::load($fid);
+ 
+	 // for case that video was not created through the form, we should check if it has a allowed extension and if needed, generate thumbnails.
+	 $fextension = video_utility::getExtension($video->filename);
+	 if ( strpos($info_instance['settings']['file_extensions'], $fextension) === false) {
+	drupal_set_message(t('The extension "' . $fextension .'" of file ' . $video->filename . ' is not allowed for import. Encoding job for '.$transcoder->getTranscoder()->getName(). ' cannot be created.'),'error');
+	return;
+	}
+	// if thumbnail(s) already exists or autocreation for thumbnails is disabled, do nothing.
+	if (empty($item['thumbnail']) && $field['settings']['autothumbnail'] == 'auto' ) {
+	$thumbs = $transcoder->extractFrames($item, $field);
+	// if thumbnails creation fails, we can assume, that something in the file is wrong and encoding will also fail     
+	if ($thumbs === FALSE) {
+		drupal_set_message(t('Thumbnails creation for '.$video->filename.' failed. Encoding job for '.$transcoder->getTranscoder()->getName(). ' cannot be created. Please check your recent log entries for further debugging.'),'error');
+        return;
+		}
+        else {
+			drupal_set_message('Thumbnails successfully created for '.$video->filename.'.','status');
+        }
     }
-
+	}
     // re queue for video conversion
     if (!empty($item['re_convert_video'])) {
       $video->video_status = VIDEO_RENDERING_PENDING;

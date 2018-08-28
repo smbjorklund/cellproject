@@ -32,8 +32,14 @@ class video_utility {
    *   Entity ID
    */
   public static function clearEntityCache($type, $id) {
+    // Clear the entity controller cache
+    entity_get_controller($type)->resetCache(array($id));
+
     // Clear field cache
     cache_clear_all('field:' . $type . ':' . $id, 'cache_field');
+
+    // Clear page cache and block cache
+    cache_clear_all(NULL, NULL);
 
     if (module_exists('entitycache')) {
       // Clear entitycache cache
@@ -75,6 +81,13 @@ class video_utility {
   }
 
   private static $streamBaseMapping = NULL;
+
+  /**
+   * Maintains a mapping from scheme to external URL prefix.
+   *
+   * @return
+   *   Array from string to string.
+   */
   private static function getStreamBaseMapping() {
     if (self::$streamBaseMapping != NULL) {
       return self::$streamBaseMapping;
@@ -84,7 +97,13 @@ class video_utility {
 
     foreach (file_get_stream_wrappers() as $wrapperscheme => $wrapperinfo) {
       $wrapper = file_stream_wrapper_get_instance_by_scheme($wrapperscheme);
-      self::$streamBaseMapping[$wrapperscheme] = $wrapper->getExternalUrl();
+      $externalUrl = $wrapper->getExternalUrl();
+      // Some stream wrappers, like the ones that derive from
+      // MediaReadOnlyStreamWrapper, return no default external URL. Ignore
+      // those, they're not useful for the Video module anyway.
+      if (!empty($externalUrl)) {
+        self::$streamBaseMapping[$wrapperscheme] = $externalUrl;
+      }
     }
 
     return self::$streamBaseMapping;
@@ -195,6 +214,7 @@ class video_utility {
 
   public static function getDimensions() {
     $dims = explode("\n", str_replace("\r", '', variable_get('video_dimensions', self::getDefaultDimensions())));
+    $dims = array_filter($dims);
     return array_combine($dims, $dims);
   }
 
@@ -208,13 +228,26 @@ class video_utility {
   }
 
   /**
+   * Return the list of known video/audio extensions.
+   */
+  public static function getMediaExtensions() {
+    $supported_extensions = array_keys(self::getVideoExtensionPlayers());
+
+    // Add other extensions that don't get a separate player but are recognized as playable anyway.
+    return array_merge($supported_extensions, array(
+      'oga', 'wma', 'flac', 'wav',
+      'ts', 'mxf',
+    ));
+  }
+
+  /**
    * Return our list of video extensions and their associated player.
    */
-  public static function getVideoExtensions() {
+  public static function getVideoExtensionPlayers() {
     return array(
       'divx' => 'video_play_divx',
       'mkv' => 'video_play_divx',
-      'mov' => 'video_play_html5',
+      'mov' => 'video_play_quicktime',
       '3gp' => 'video_play_quicktime',
       '3g2' => 'video_play_quicktime',
       'mp4' => 'video_play_html5',
@@ -280,5 +313,22 @@ class video_utility {
       default:
         return file_get_mimetype($uri);
     }
+  }
+
+  /**
+   * Returns the nearest even integer given an int or float.
+   *
+   * When equal, it will choose the highest nearest even integer.
+   */
+  public static function roundToEvenNumber($number) {
+    $remainder = fmod($number, 2);
+    if ($remainder == 0) {
+      return (int)($number);
+    }
+    elseif ($remainder < 1) {
+      return (int)($number - $remainder);
+    }
+
+    return (int)($number - $remainder + 2);
   }
 }
