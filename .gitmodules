@@ -1,0 +1,4 @@
+[submodule "sites/cellproject.net/themes/centum"]
+	path = sites/cellproject.net/themes/centum
+	url = git@github.com:steinmb/centum.git
+	branch = master
