@@ -110,7 +110,7 @@ class MigrateSourceOaiPmh extends MigrateSource {
    * Return a count of all available source records.
    */
   public function computeCount() {
-    return $this->sourceRecords->getTotalRecordsInCollection();
+    return $this->sourceRecords->getTotalRecordCount();
   }
 
   /**
@@ -133,7 +133,7 @@ class MigrateSourceOaiPmh extends MigrateSource {
     // This can be used to store the resumptionToken in a variable
     // in prepareRow().
     $batch = $this->sourceRecords->getBatch();
-    if (count($batch) == 0) {
+    if (!is_array($batch) || count($batch) === 0) {
       $row->resumptionToken = $this->sourceRecords->getResumptionToken();
     }
     // Fetch next item.
