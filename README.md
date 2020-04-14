@@ -1,6 +1,6 @@
 # CELL network Drupal installation
 
-Consist of so fare two git repo:
+Consist of so far, two git repos:
 
 * https://github.com/steinmb/cellproject
 * https://github.com/steinmb/centum
