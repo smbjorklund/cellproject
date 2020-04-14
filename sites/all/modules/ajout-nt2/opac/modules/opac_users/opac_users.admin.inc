@@ -350,7 +350,7 @@ function opac_users_fields_form($form, &$form_state, $server_id) {
   . 'Check/Uncheck the box under "Visible" column to show/hide corresponding '
   . 'field.<br /> Drag and drop table rows to re-order them.';
   $form['explanation'] = array(
-    '#markup' => $explanation,
+    '#markup' => t($explanation),
   );
 
   $server = opac_server_load($server_id);
@@ -404,7 +404,7 @@ function opac_users_fields_form($form, &$form_state, $server_id) {
         ),
         'weight' => array(
           '#type' => 'weight',
-          '#title' => 'Weight for ' . $field['label'],
+          '#title' => t('Weight for @label', array('@label' => $field['label'])),
           '#title_display' => 'invisible',
           '#default_value' => $default_weight,
         ),

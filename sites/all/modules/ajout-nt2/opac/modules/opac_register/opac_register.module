@@ -17,7 +17,7 @@ function opac_register_init() {
 function opac_register_menu() {
   $items['user/opac-register'] = array(
     'title' => 'Register',
-    'description' => 'Register',
+    'description' => 'Registration form',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('opac_register_registration_form'),
     'access callback' => 'opac_register_access',
@@ -26,7 +26,7 @@ function opac_register_menu() {
   );
   // General settings.
   $items['admin/config/opac/opac-register'] = array(
-    'title' => 'OPAC Registration',
+    'title' => 'OPAC Registration settings',
     'description' => 'Configure registration',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('opac_register_settings_form'),

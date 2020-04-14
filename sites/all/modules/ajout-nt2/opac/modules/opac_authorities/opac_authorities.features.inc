@@ -24,13 +24,13 @@ function opac_authorities_mapping_features_export_options() {
       ));
       $mapping_count = count($mappings);
       if ($mapping_count) {
-        $string = 'Authority mapping for @serv_name/@type (@count field(s) mapped)';
-        $variables = array(
+        $t_options = array(
           '@serv_name' => $server->serv_name,
           '@type' => $type_name,
           '@count' => $mapping_count,
         );
-        $export["$serv_id::$type_name"] = t($string, $variables);
+        $string = t('Authority mapping for @serv_name/@type (@count field(s) mapped)', $t_options);
+        $export["$serv_id::$type_name"] = $string;
       }
     }
   }
@@ -139,7 +139,9 @@ function opac_authorities_server_type_features_export_options() {
         '@serv_name' => $server->serv_name,
         '@type' => $type_name,
       );
-      $export["$serv_id::$type_name"] = t($string, $variables);
+      $t_options = array('@serv_name' => $server->serv_name, '@type' => $type_name);
+      $string = t("Authority type '@type' for server '@serv_name'", $t_options);
+      $export["$serv_id::$type_name"] = $string;
     }
   }
   return $export;

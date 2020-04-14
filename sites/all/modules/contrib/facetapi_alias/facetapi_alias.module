@@ -32,6 +32,9 @@ function facetapi_alias_facet_display_form_submit($form, &$form_state) {
   /** @var $adapter FacetapiAdapter */
   $adapter = $form['#facetapi']['adapter'];
   cache_clear_all('facetapi:facet_info:' . $adapter->getSearcher(), 'cache', TRUE);
+
+  // Force Facetapi to reload info.
+  drupal_static_reset('facetapi_get_facet_info');
 }
 
 /**

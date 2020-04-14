@@ -21,7 +21,8 @@ $handler->display->display_options['title'] = 'Comments';
 $handler->display->display_options['css_class'] = 'admin-views-view';
 $handler->display->display_options['use_ajax'] = TRUE;
 $handler->display->display_options['use_more_always'] = FALSE;
-$handler->display->display_options['access']['type'] = 'menu';
+$handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'access administration pages';
 $handler->display->display_options['cache']['type'] = 'none';
 $handler->display->display_options['query']['type'] = 'views_query';
 $handler->display->display_options['query']['options']['query_comment'] = FALSE;
@@ -369,6 +370,11 @@ $translatables['admin_views_comment'] = array(
   t('No comments available.'),
   t('Node'),
   t('author'),
+  t('- Choose an operation -'),
+  t('Delete'),
+  t('Change value'),
+  t('Publish'),
+  t('Unpublish'),
   t('Title'),
   t('Author'),
   t('Posted in'),

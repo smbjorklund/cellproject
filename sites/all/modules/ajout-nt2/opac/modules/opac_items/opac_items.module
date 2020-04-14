@@ -99,7 +99,7 @@ function opac_items_menu() {
     'access arguments' => array('administer site configuration'),
   );
   $items['admin/config/opac/items/fields/edit/%/%'] = array(
-    'title' => 'Edit OPAC server',
+    'title' => 'Edit items fields',
     'description' => 'Edit items fields',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('opac_items_admin_field_edit_form', 6, 7),
@@ -332,7 +332,7 @@ function opac_items_node_view($node, $view_mode, $langcode) {
       $info_markup .= '<div class="opac_items_information opac_items_fields">';
       $info_markup .= "<span class='node hidden'>$node->nid</span>";
       $info_markup .= "<span class='limititems hidden'>" . variable_get("opac_items_max_in_field_$view_mode", 5) . "</span>";
-      $info_markup .= "<a href='#' >Checking items information...</a>";
+      $info_markup .= '<a href="#">' . t('Checking items information...', array(), array('context' => 'libraries')) . '</a>';
       $info_markup .= '</div>';
 
       if (variable_get("opac_items_fieldset_$view_mode", 'fieldset') == 'fieldset') {
@@ -348,7 +348,7 @@ function opac_items_node_view($node, $view_mode, $langcode) {
     $markup = '<div class="opac_items_availability opac_items_fields">';
     $markup .= "<span class='node hidden'>$node->nid</span>";
     $markup .= "<span class='limititems hidden'>" . variable_get("opac_items_max_in_field_$view_mode", 5) . "</span>";
-    $markup .= "<a href='#' >Waiting for availability...</a>";
+    $markup .= '<a href="#">' . t('Waiting for availability...') . '</a>';
     $markup .= '</div>';
 
     $node->content['field_opac_items_avail'] = array(
@@ -391,7 +391,7 @@ function opac_items_availability_callback($nid) {
  *   html output.
  */
 function opac_items_information_callback($nid, $limititems) {
-  $output = "<span>No items information available.</span>";
+  $output = '<span>' . t('No items information available.', array(), array('context' => 'libraries')) . '</span>';
   if ($nid) {
     $data = opac_items_get_items(node_load($nid), TRUE);
 
@@ -682,13 +682,15 @@ function opac_items_features_api() {
  * Implements hook_opac_items_data_alter().
  */
 function opac_items_opac_items_data_alter(&$data) {
-  $data['mapping'][] = array(
-    'item_field' => 'avail',
-    'display_header' => 'Available?',
-    'weight' => '40',
-  );
-  foreach ($data['items'] as $itemnumber => $item) {
-    $avail = $item['avail'] == 1 ? t('Yes') : t('No');
-    $data['items'][$itemnumber]['avail'] = $avail;
+  if (!variable_get('opac_items_hide_availability', FALSE)) {
+    $data['mapping'][] = array(
+      'item_field' => 'avail',
+      'display_header' => 'Available?',
+      'weight' => '40',
+    );
+    foreach ($data['items'] as $itemnumber => $item) {
+      $avail = $item['avail'] == 1 ? t('Yes') : t('No');
+      $data['items'][$itemnumber]['avail'] = $avail;
+    }
   }
 }

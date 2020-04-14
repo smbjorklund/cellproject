@@ -7,6 +7,52 @@
  */
 
 /**
+ * Implements hook_page_alter().
+ */
+function cincopa_page_alter(&$page) {
+  if (user_access('View the administration theme') && path_is_admin(current_path())) {
+    drupal_add_css(drupal_get_path('module', 'cincopa') . '/cincopa.css');
+    drupal_add_js(drupal_get_path('module', 'cincopa') . '/plugin/plugin.js');
+    
+    $output = '';
+    if(!isset($_COOKIE['cincopa_help_close'])) {
+      $output = '<div class="cincopa_help_wrapper"><div id="icon_close" class="icon-close"></div><div class="cincopa_help"><p>
+        <img src="https://www.cincopa.com/_cms/design15/icons/favicon-32.png?affdata=drupal-plugin-7,welcome-msg" height="15px">
+        Welcome to Cincopa Rich Media Plugin - the most popular way to add videos, photo galleries, slideshows, Cooliris gallery, podcast and music to your site.</p>Check our
+      <input type="button" class="form-submit" value="Welcome page" onclick="window.open(\'https://www.cincopa.com/drupal/welcome\');"> for registration and support documents.</div></div><br/>';
+      if (isset($page['help'])) {
+        $output .= $page['help']['system_help']['#markup'];
+      }
+    }
+    $page['help']['system_help']['#markup'] = $output;
+  }
+}
+
+/**
+ * Implements hook_wysiwyg_plugin().
+ */
+function cincopa_wysiwyg_plugin($editor, $version) {
+  drupal_add_css(drupal_get_path('module', 'cincopa') . '/cincopa.css');
+  switch ($editor) {
+    case 'ckeditor':
+      return array(
+        'cincopa' => array(
+          'path' => drupal_get_path('module', 'cincopa') . '/plugin',
+          'url' => '',
+          'filename' => 'plugin.js',
+          'buttons' => array(
+            'cincopa_new_gallery' => t('Cincopa New Gallery'),
+            'cincopa_items' => t('Cincopa'),
+          ),
+          'load' => TRUE,
+          'internal' => FALSE,
+        ),
+      );
+      break;
+  }
+}
+
+/**
  * Implements hook_filter_info().
  */
 function cincopa_filter_info() {
@@ -36,78 +82,13 @@ function _filter_cincopa_tips($filter, $format, $long = FALSE) {
         return t('Insert a Cincopa gallery (Use the syntax "@example").', array('@example' => '[cincopa 10465673]'));
     }
     else {
-        return t('Insert a Cincopa gallery using the tag "@example" (without the brackets). Replace the numbers with the gallery ID you wish to display. To create a new gallery, visit the <a href="@internal">Cincopa Multimedia Management page</a>, or use the <a href="@link" target="_blank">Cincopa Wizard</a>.',
+        return t('Insert a Cincopa gallery using the tag "@example" (without the quotes). Replace the numbers with the gallery ID you wish to display. To create a new gallery, use the <a href="@link" target="_blank">Cincopa Wizard</a>.',
             array(
                 '@example' => '[cincopa 10465673]',
-                '@internal' => 'admin/config/media/cincopa',
                 '@link' => 'http://www.cincopa.com/wpplugin/start.aspx'
             )
         );
     }
-}
-
-/**
- * Implements hook_menu().
- */
-function cincopa_menu() {
-  $items = array();
-
-  $items['admin/config/media/cincopa'] = array(
-    'title' => 'Cincopa Multimedia',
-    'description' => 'Manage galleries, upload videos, photos, podcasts and music, design players and slideshows and publish.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('cincopa_affilate_form'),
-    'access arguments' => array('manage cincopa galleries'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  return $items;
-}
-
-/**
- * Implements hook_perm().
- */
-function cincopa_perm() {
-  return array('manage cincopa galleries');
-}
-
-/**
- * Creare affilate code form.
- *
- * @return array
- * Array which contains form description.
- */
-function cincopa_affilate_form() {
-  $affilate_code = variable_get('cincopa_affilate_code', '');
-  $variables = array(
-      'affilate_code' => $affilate_code,
-  );
-  $window = theme('cincopa_mainform', $variables);
-
-  $form = array();
-
-  $form['cincopa_affilate_code'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Affilate code'),
-    '#default_value' => variable_get('cincopa_affilate_code', ''),
-    '#size' => 50,
-    '#maxlength' => 50,
-    '#description' => t(
-        'Your Cincopa Affilate Code (<a target="_blank" href="@link">what is this code?</a>).',
-        array(
-            '@link' => url('http://support.cincopa.com/index.php?title=Cincopa_Multimedia_Platform/Drupal_AFC'
-            )
-        )
-    ),
-    '#required' => FALSE,
-  );
-  
-  $form['window'] = array(
-    '#title' => t('Manage Galleries'),
-    '#markup' => $window,
-  );
-
-  return system_settings_form($form);
 }
 
 /**
@@ -139,45 +120,10 @@ function cincopa_plugin_callback($match) {
  */
 function cincopa_theme($existing, $type, $theme, $path) {
   return array(
-    'cincopa_mainform' => array(
-      'variables' => array('affilate_code' => NULL)
-    ),
     'cincopa_callback' => array(
       'variables' => array('match' => NULL)
     )
   );
-}
-
-/**
- * Theme function for the settings page iframe
- *
- * Constructed as a theme function for simple
- * override of iframe size.
- *
- * @param $affilate_code
- *  An optional affiliat code passed from the
- *  settings page.
- *
- * @see cincopa_affilate_form()
- *
- * @ingroup themeable
- */
-function theme_cincopa_mainform($variables) {
-  $affilate_code = trim($variables["affilate_code"]);
-  // Set width and height of iframe
-  $width = '98%';
-  $height = '500px';
-  
-  // If affiliate code is present, use it in URL
-  $aff_code = '';
-  if (strlen($affilate_code) > 0) {
-    $aff_code .= "?afc='" . urlencode(check_plain($affilate_code)) . "'";
-  }
-
-  // Build HTML for iframe
-  $window = '<iframe src="http://www.cincopa.com/wpplugin/start.aspx' . $aff_code . '" width="' . $width . '" height="' . $height . '"></iframe>';
-  
-  return $window;
 }
 
 /**
@@ -207,7 +153,7 @@ function theme_cincopa_callback($match) {
   static $added_cincopa_js = FALSE;
   if (!$added_cincopa_js) {
     drupal_add_js(
-        'http://www.cincopa.com/wpplugin/runtime/libasync.js',
+        '//www.cincopa.com/media-platform/runtime/libasync.js',
         array(
             'type' => 'external',
             'scope' => 'header',
@@ -231,7 +177,7 @@ function theme_cincopa_callback($match) {
   );
   
   // Return the div which will turn into a gallery
-  $return = '<div id="_cp_widget_' . $match[2] . '"><img src="http://www.cincopa.com/wpplugin/runtime/loading.gif" style="border:0;"/></div>';
+  $return = '<div id="_cp_widget_' . $match[2] . '">...</div>';
 
   return $return;
 }

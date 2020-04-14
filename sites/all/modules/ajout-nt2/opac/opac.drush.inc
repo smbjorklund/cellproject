@@ -29,11 +29,11 @@ function opac_drush_command() {
     'description' => dt('Import a set of records into OPAC module.'),
     'aliases'     => array('harvest'),
     'options' => array(
-      'servers' => 'A comma-separated list of servers for which to harvset.',
+      'servers' => 'A comma-separated list of servers machine names for which to harvest.',
       'batch-size' => 'Number of biblios harvested in each batch process. Default value is harvest_batch_size variable or 1000',
       'create-only' => 'Tells drush to only create nodes. Existing nodes will not be updated.',
-      'from' => 'The first biblio number to harvest.',
-      'to' => 'The last biblio number to harvest.',
+      'from' => 'The first (server) biblio number to harvest.',
+      'to' => 'The last (server) biblio number to harvest.',
       'file' => 'You must give the absolute path of a file. Allows to specify a file containing biblio ids to harvest.',
       'print-id' => 'Print each biblio id',
     ),
@@ -43,7 +43,7 @@ function opac_drush_command() {
     'description' => dt('Delete biblio from the database.'),
     'options' => array(
       'servers' => 'A comma-separated list of servers for which to delete nodes.',
-      'ids' => 'A comma-separated list of biblio ids to delete.',
+      'ids' => 'A comma-separated list of biblio (server) ids to delete.',
       'confirm' => 'Confirm deletion. If not, a list of node that match condition is displayed',
     ),
   );

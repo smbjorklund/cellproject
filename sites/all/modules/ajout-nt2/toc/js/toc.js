@@ -2,17 +2,22 @@
 
 Drupal.behaviors.tocLoader = {
   attach: function (context, settings) {
-    var toc = $('<ul id="toc"></ul>');
-    toc = toc.tableOfContents($(Drupal.settings.toc_scope), { 
-      startLevel: Drupal.settings.toc_start_level, 
-      depth: Drupal.settings.toc_depth,
-      topLinks: Drupal.settings.toc_topLinks
+    $(Drupal.settings.toc_scope, context).once('toc-scope', function() {
+      var toc = $('<ul id="toc"></ul>');
+
+      toc = toc.tableOfContents(this, {
+        startLevel: Drupal.settings.toc_start_level,
+        depth: Drupal.settings.toc_depth,
+        topLinks: Drupal.settings.toc_topLinks
+      });
+
+      if ($('li', toc).length > 0) {
+        $(Drupal.settings.toc_dest).prepend(toc);
+        $('#toc').localScroll();
+        // For toplinks.
+        $('.content').localScroll();
+      }
     });
-    if ($('li', toc).length > 0) {
-      $(Drupal.settings.toc_dest).prepend(toc);
-      $('#toc').localScroll();
-      $('.content').localScroll(); // For toplinks.
-    }    
   }
 };
 

@@ -12,9 +12,9 @@ files[] = multifile.inc
 files[] = webform_multifile.install
 files[] = webform_multifile.module
 
-; Information added by drupal.org packaging script on 2012-06-19
-version = "7.x-1.2"
+; Information added by Drupal.org packaging script on 2017-05-10
+version = "7.x-1.6"
 core = "7.x"
 project = "webform_multifile"
-datestamp = "1340091161"
+datestamp = "1494424294"
 

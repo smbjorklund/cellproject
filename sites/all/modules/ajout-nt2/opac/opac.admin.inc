@@ -115,13 +115,14 @@ function opac_server_view($serv_id) {
   foreach ($wsinfos as $ws) {
 
     // Basic informations.
-    $return_string .= "<h3>ILS Connection test through " . $ws['name'] . "</h3>";
-    $return_string .= '<ul><li>Called url: <a href="' . $ws['url'] . '">' . $ws['url'] . '</a></li>';
-    $return_string .= "<li>HTTP response code: " . $ws['code'] . "</li>";
+    $return_string .= '<h3>' . t('ILS Connection test through @ws_name', array('@ws_name' => $ws['name'])) . '</h3>';
+    $url = '<a href="' . $ws['url'] . '">' . $ws['url'] . '</a></li>';
+    $return_string .= '<ul><li>' . t('Called url: @url', array('@url' => $url));
+    $return_string .= '<li>' . t('HTTP response code: @code', array('@code' => $ws['code'])) . '</li>';
 
     // Additional informations.
     if (array_key_exists('infos', $ws)) {
-      $return_string .= "<li>Additional informations:<ul>";
+      $return_string .= '<li>' . t('Additional informations:') . '<ul>';
       foreach ($ws['infos'] as $key => $value) {
         $return_string .= "<li>$key: $value</li>";
       }
@@ -129,7 +130,8 @@ function opac_server_view($serv_id) {
     }
     // Raw response.
     if (array_key_exists('raw', $ws)) {
-      $return_string .= "<li>Raw response:<pre>" . htmlentities(print_r($ws['raw'], 1)) . "</pre></li>";
+      $response = '<pre>' . htmlentities(print_r($ws['raw'], 1)) . '</pre></li>';
+      $return_string .= '<li>' . t('Raw response: @response', array('@response' => $response));
     }
     $return_string .= "</ul>";
   }
@@ -475,10 +477,10 @@ function opac_admin_server_mapping_edit_form($form, &$form_state, $serv_id, $con
 
   // Here is a message to the user on how to use this form.
   $node_field_link = l("$node_field_label ($fieldname)", "admin/structure/types/manage/$content_type/fields/$fieldname");
-  $html = "<div>Editing mapping for node field $node_field_link. ";
-  $html .= "<span>Be careful of multivalued fields. Some ILS fields send back more than one value. <br />";
-  $html .= "A node field than accept only one value and which is mapped with a multivalued filed will contain only the first one. <br />";
-  $html .= "So if it is, you may edit this node field to make accept multiple values</span></div>";
+  $html = '<div>' . t('Editing mapping for node field @node_field_link.', array('@node_field_link' => $node_field_link));
+  $html .= '<span>' . t('Be careful of multivalued fields. Some ILS fields send back more than one value.') . '<br />';
+  $html .= t('A node field than accept only one value and which is mapped with a multivalued filed will contain only the first one.') . '<br />';
+  $html .= t('So if it is, you may edit this node field to make accept multiple values.') . '</span></div>';
   $form['mapping_information'] = array(
     '#markup' => $html,
   );
@@ -506,8 +508,9 @@ function opac_admin_server_mapping_edit_form($form, &$form_state, $serv_id, $con
   $form['mapping']['field_description'] = array(
     // Populate this form element with field description.
     // The form is rebuilt during ajax processing.
-    '#markup' => isset($form_state['values'])
-    ? opac_get_field_descrition($form_state['values']['serv_id'], $form_state['values']['mapped_with']) : opac_get_field_descrition($serv_id, $field_mapped_with),
+    '#markup' => isset($form_state['values']) ?
+    opac_get_field_descrition($form_state['values']['serv_id'], $form_state['values']['mapped_with']) :
+    opac_get_field_descrition($serv_id, $field_mapped_with),
     '#prefix' => '<div id="replace_description_field">',
     '#suffix' => '</div>',
   );
@@ -568,7 +571,7 @@ function opac_admin_server_mapping_edit_form($form, &$form_state, $serv_id, $con
  */
 function opac_get_field_descrition($serv_id, $name) {
   if (!$name) {
-    return "<div class='description'>Select a field to be mapped with current node field.</div>";
+    return '<div class="description">' . t('Select a field to be mapped with current node field.') . '</div>';
   }
   $server = opac_server_load($serv_id);
   $connector = opac_get_instance($server);
@@ -576,7 +579,9 @@ function opac_get_field_descrition($serv_id, $name) {
   $label = $connector_fields[$name]['label'];
   $description = $connector_fields[$name]['description'];
 
-  return "<div><strong>Description of $label field:</strong><div class='description'>$description</div>";
+  $return = '<div><strong>' . t('Description of @label field:', array('@label' => $label));
+  $return .= '</strong><div class="description">' . t($description) . '</div>';
+  return $return;
 }
 
 /**
@@ -629,27 +634,48 @@ function opac_admin_server_mapping_edit_form_submit($form, &$form_state) {
   drupal_goto("admin/config/opac/servers/manage/" . $values['serv_id'] . "/biblio-mapping/" . $values['content_type']);
 }
 
-/**
- * Delete callback: delete mapping.
- *
- * @param string $serv_id
- *   ILS server identifier.
- *
- * @param string $fieldname
- *   Field name for which delete mapping.
- */
-function opac_mapping_delete_callback($serv_id, $content_type, $fieldname) {
-  module_load_include('inc', 'opac', "includes/opac.db");
+function opac_mapping_delete_confirm($form, &$form_state, $serv_id, $content_type, $fieldname) {
+  $form['serv_id'] = array(
+    '#type' => 'value',
+    '#value' => $serv_id,
+  );
+  $form['content_type'] = array(
+    '#type' => 'value',
+    '#value' => $content_type,
+  );
+  $form['fieldname'] = array(
+    '#type' => 'value',
+    '#value' => $fieldname,
+  );
 
-  opac_mapping_del(
-    array(
+  return confirm_form($form,
+    t('Are you sure you want to delete this mapping?'),
+    "admin/config/opac/servers/manage/$serv_id/biblio-mapping/$content_type",
+    t('This action cannot be undone.'),
+    t('Delete'),
+    t('Cancel')
+  );
+}
+
+function opac_mapping_delete_confirm_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $serv_id = $values['serv_id'];
+  $content_type = $values['content_type'];
+  $fieldname = $values['fieldname'];
+
+  if ($form_state['values']['confirm']) {
+    module_load_include('inc', 'opac', "includes/opac.db");
+
+    opac_mapping_del(array(
       'serv_id' => $serv_id,
       'content_type' => $content_type,
       'node_field_name' => $fieldname,
-    )
-  );
-  // Clear cache related to opac_fields_mapping.
-  cache_clear_all('opac_fields_mapping', 'cache', TRUE);
+    ));
+
+    // Clear cache related to opac_fields_mapping.
+    cache_clear_all('opac_fields_mapping', 'cache', TRUE);
+    drupal_set_message(t('Content type mapping has been deleted successfully.'));
+  }
 
   drupal_goto("admin/config/opac/servers/manage/$serv_id/biblio-mapping/$content_type");
 }

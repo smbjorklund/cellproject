@@ -26,16 +26,16 @@ function toc_filter_admin_settings() {
     '#default_value' => variable_get('toc_filter_header_tag', 'h3')
   );
 
-  $form['toc_filter_ul_default_title'] = array(
+  $form['toc_filter_bullet_default_title'] = array(
     '#type' => 'textfield',
-    '#title' => t('Un-order list default title'),
-    '#default_value' => variable_get('toc_filter_ul_default_title', '')
+    '#title' => t('Un-order (bullet) list default title'),
+    '#default_value' => variable_get('toc_filter_bullet_default_title', '')
   );
 
-  $form['toc_filter_ol_default_title'] = array(
+  $form['toc_filter_number_default_title'] = array(
     '#type' => 'textfield',
-    '#title' => t('Order list default title'),
-    '#default_value' => variable_get('toc_filter_ol_default_title', '')
+    '#title' => t('Order (number) list default title'),
+    '#default_value' => variable_get('toc_filter_number_default_title', '')
   );
 
   $form['toc_filter_faq_default_title'] = array(
@@ -43,6 +43,15 @@ function toc_filter_admin_settings() {
     '#title' => t('FAQ default title'),
     '#default_value' => variable_get('toc_filter_faq_default_title', '')
   );
+
+  if (module_exists('ctools')) {
+    $form['toc_filter_jump_menu_default_title'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Jump menu default title'),
+      '#default_value' => variable_get('toc_filter_jump_menu_default_title', ''),
+      '#description' => t('The jump menu title will appear as the first item in the select menu.'),
+    );
+  }
 
   $form['toc_filter_smooth_scroll'] = array(
     '#type' => 'checkbox',

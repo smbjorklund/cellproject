@@ -1,18 +1,19 @@
 <?php
+
 /**
  * @file
  * Main module file for the toc module.
  */
 
 /**
- * Implementats hook_menu().
+ * Implements hook_menu().
  */
 function toc_menu() {
   $items = array();
 
   $items['admin/config/user-interface/toc'] = array(
     'title' => 'Table of contents',
-    'descriptions' => t('Configure jQuery table of contents module'),
+    'descriptions' => 'Configure jQuery table of contents module',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('toc_settings_form'),
     'access arguments' => array('administer site configuration'),
@@ -21,6 +22,9 @@ function toc_menu() {
   return $items;
 }
 
+/**
+ * Form callback for TOC settings.
+ */
 function toc_settings_form() {
   $form = array();
 
@@ -36,7 +40,15 @@ function toc_settings_form() {
     '#type' => 'select',
     '#title' => t('Start level'),
     '#description' => t('Starting from which heading level you want to generate the table of contents.'),
-    '#options' => array(1 => 'h1', 2 => 'h2', 3 => 'h3', 4 => 'h4', 5 => 'h5', 6 => 'h6', 8 => 'h7'),
+    '#options' => array(
+      1 => 'h1',
+      2 => 'h2',
+      3 => 'h3',
+      4 => 'h4',
+      5 => 'h5',
+      6 => 'h6',
+      8 => 'h7',
+    ),
     '#default_value' => variable_get('toc_start_level', 2),
   );
 
@@ -47,7 +59,7 @@ function toc_settings_form() {
     '#options' => range(1, 6),
     '#default_value' => variable_get('toc_depth', 1),
   );
-  
+
   $form['toc_topLinks'] = array(
     '#type' => 'textfield',
     '#title' => t('topLinks'),
@@ -82,18 +94,20 @@ function toc_field_extra_fields() {
       'toc' => array(
         'label' => t('Table of contents'),
         'description' => t('Show table of contents'),
-        'weight' => 3,      
+        'weight' => 3,
       ),
     );
   }
-  return $extra; 
+  return $extra;
 }
 
 /**
  * Implements hook_form_alter().
  */
 function toc_form_node_form_alter(&$form, &$form_state, $form_id) {
-  if (!in_array($form['#node']->type, toc_allowed_node_types())) return;
+  if (!in_array($form['#node']->type, toc_allowed_node_types())) {
+    return;
+  }
   $form['toc'] = array(
     '#type' => 'fieldset',
     '#title' => t('Table of contents'),
@@ -111,11 +125,16 @@ function toc_form_node_form_alter(&$form, &$form_state, $form_id) {
  * Implements hook_node_insert().
  */
 function toc_node_insert($node) {
-  if (!in_array($node->type, toc_allowed_node_types())) return;
+  if (!in_array($node->type, toc_allowed_node_types())) {
+    return;
+  }
   if ($node->toc) {
     db_insert('toc')
-    ->fields(array('nid' => $node->nid))
-    ->execute();    
+      ->fields(array(
+        'nid' => $node->nid,
+        'vid' => $node->vid,
+      ))
+      ->execute();
   }
 }
 
@@ -123,10 +142,13 @@ function toc_node_insert($node) {
  * Implements hook_node_update().
  */
 function toc_node_update($node) {
-  if (!in_array($node->type, toc_allowed_node_types())) return;
+  if (!in_array($node->type, toc_allowed_node_types())) {
+    return;
+  }
   db_delete('toc')
-  ->condition('nid', $node->nid)
-  ->execute();
+    ->condition('nid', $node->nid)
+    ->condition('vid', $node->vid)
+    ->execute();
   toc_node_insert($node);
 }
 
@@ -134,26 +156,43 @@ function toc_node_update($node) {
  * Implements hook_node_delete().
  */
 function toc_node_delete($node) {
-  if (!in_array($node->type, toc_allowed_node_types())) return;
+  if (!in_array($node->type, toc_allowed_node_types())) {
+    return;
+  }
   db_delete('toc')
-  ->condition('nid', $node->nid)
-  ->execute();
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_node_revision_delete().
+ */
+function toc_node_revision_delete($node) {
+  if (!in_array($node->type, toc_allowed_node_types())) {
+    return;
+  }
+  db_delete('toc')
+    ->condition('vid', $node->vid)
+    ->execute();
 }
 
 /**
  * Implements hook_node_load().
  */
 function toc_node_load($nodes, $types) {
- if (count(array_intersect(toc_allowed_node_types(), $types))) {
-  foreach ($nodes as $node) {
-    if (!in_array($node->type, toc_allowed_node_types())) return;
+  if (count(array_intersect(toc_allowed_node_types(), $types))) {
+    foreach ($nodes as $node) {
+      if (!in_array($node->type, toc_allowed_node_types())) {
+        return;
+      }
       $toc = db_select('toc', 'toc')
-      ->fields('toc', array('nid'))
-      ->condition('nid', $node->nid, '=')
-      ->execute()
-      ->fetch();
+        ->fields('toc', array('nid'))
+        ->condition('nid', $node->nid, '=')
+        ->condition('vid', $node->vid, '=')
+        ->execute()
+        ->fetch();
       $node->toc = $toc ? TRUE : FALSE;
-    }   
+    }
   }
 }
 
@@ -161,24 +200,28 @@ function toc_node_load($nodes, $types) {
  * Implements hook_node_view().
  */
 function toc_node_view($node, $view_mode) {
-  if (!in_array($node->type, toc_allowed_node_types())) return;
-    if ($view_mode == 'full' && isset($node->toc) && $node->toc) {
-      $settings = array(
-        'toc_start_level' => variable_get('toc_start_level', 2),
-        'toc_depth' => variable_get('toc_depth', 1),
-        'toc_topLinks' => variable_get('toc_topLinks' , ''),
-        'toc_scope' => variable_get('toc_scope', ' .node .content:eq(0)'),
-        'toc_dest' => variable_get('toc_dest', ' .node .content:eq(0)'),
-      );
-      drupal_add_js($settings, 'setting');
-      drupal_add_js(libraries_get_path('jquery.tableofcontents') . '/jquery.tableofcontents.min.js');
-      drupal_add_js(libraries_get_path('jquery.scrollTo') . '/jquery.scrollTo.min.js');
-      drupal_add_js(libraries_get_path('jquery.localScroll') . '/jquery.localScroll.min.js');
-      drupal_add_js(drupal_get_path('module', 'toc') . '/js/toc.js');
-    }
+  if (!in_array($node->type, toc_allowed_node_types())) {
+    return;
+  }
+  if ($view_mode == 'full' && isset($node->toc) && $node->toc) {
+    $settings = array(
+      'toc_start_level' => variable_get('toc_start_level', 2),
+      'toc_depth' => variable_get('toc_depth', 1),
+      'toc_topLinks' => variable_get('toc_topLinks', ''),
+      'toc_scope' => variable_get('toc_scope', ' .node .content:eq(0)'),
+      'toc_dest' => variable_get('toc_dest', ' .node .content:eq(0)'),
+    );
+    drupal_add_js($settings, 'setting');
+    drupal_add_js(libraries_get_path('jquery.tableofcontents') . '/jquery.tableofcontents.min.js');
+    drupal_add_js(libraries_get_path('jquery.scrollTo') . '/jquery.scrollTo.min.js');
+    drupal_add_js(libraries_get_path('jquery.localScroll') . '/jquery.localScroll.min.js');
+    drupal_add_js(drupal_get_path('module', 'toc') . '/js/toc.js');
+  }
 }
 
-
+/**
+ * Convert array variable to list of enabled node types.
+ */
 function toc_allowed_node_types() {
   return array_keys(array_filter(variable_get('toc_node_types', array())));
 }

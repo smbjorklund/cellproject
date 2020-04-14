@@ -95,7 +95,7 @@ class MediaUStreamStreamWrapper extends MediaReadOnlyStreamWrapper {
       file_prepare_directory($dirname, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
       $response = drupal_http_request($this->getOriginalThumbnailPath());
       if (empty($response->error)) {
-        file_save_data($response->data, $local_path, FILE_EXISTS_REPLACE);
+        file_unmanaged_save_data($response->data, $local_path, TRUE);
       }
       else {
         @copy($this->getOriginalThumbnailPath(), $local_path);

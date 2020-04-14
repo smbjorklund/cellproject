@@ -98,13 +98,13 @@ function opac_register_settings_form($form, $form_state) {
 
   $form['messages_fieldset']['opac_register_before_registration_text'] = array(
     '#type' => 'textarea',
-    '#title' => 'A text displayed before the registration process',
+    '#title' => t('A text displayed before the registration process'),
     '#default_value' => variable_get("opac_register_before_registration_text", ''),
   );
 
   $form['messages_fieldset']['opac_register_after_registration_text'] = array(
     '#type' => 'textarea',
-    '#title' => 'A text displayed after the registration process',
+    '#title' => t('A text displayed after the registration process'),
     '#default_value' => variable_get("opac_register_after_registration_text", ''),
   );
 

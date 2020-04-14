@@ -443,10 +443,10 @@ function opac_authorities_admin_server_mapping_edit_form($form, &$form_state, $s
   else {
     $auth_field_link = t('Title (@fieldname)', array('@fieldname' => $fieldname));
   }
-  $html = "<div>Editing mapping for node field $auth_field_link. ";
-  $html .= "<span>Be careful of multivalued fields. Some ILS fields send back more than one value. <br />";
-  $html .= "A node field than accept only one value and which is mapped with a multivalued filed will contain only the first one. <br />";
-  $html .= "So if it is, you may edit this node field to make accept multiple values</span></div>";
+  $html = '<div>' . t('Editing mapping for authority field @auth_field_link.', array('@auth_field_link' => $auth_field_link));
+  $html .= '<span>' . t('Be careful of multivalued fields. Some ILS fields send back more than one value.') . '<br />';
+  $html .= t('Authority fields that accept only one value and are mapped with a multivalued field will contain only the first one.') . '<br />';
+  $html .= t('So if it is, you may edit this authority field to make it accept multiple values.') . '</span></div>';
   $form['mapping_information'] = array(
     '#markup' => $html,
   );
@@ -494,7 +494,7 @@ function opac_authorities_admin_server_mapping_edit_form($form, &$form_state, $s
     $vocabulary_name = $vocabulary->name;
 
     $vocabulary_fields = field_info_instances('taxonomy_term', $vocabulary_machine_name);
-    $vocabulary_fields_opt = array('none' => 'select a term field', 'name' => 'Term name');
+    $vocabulary_fields_opt = array('none' => t('select a term field'), 'name' => t('Term name'));
     foreach ($vocabulary_fields as $name => $field) {
       $vocabulary_fields_opt[$name] = $field['label'];
     }
@@ -509,7 +509,7 @@ function opac_authorities_admin_server_mapping_edit_form($form, &$form_state, $s
     );
     $form['taxonomy_rule'] = array(
       '#type' => 'fieldset',
-      '#title' => check_plain(t("Taxonomy rule for vocabulary $vocabulary_name")),
+      '#title' => t('Taxonomy rule for vocabulary @vocabulary_name', array('@vocabulary_name' => $vocabulary_name)),
       '#attributes' => array('class' => array('container-inline')),
     );
     $form['taxonomy_rule']['term_field'] = array(
@@ -519,9 +519,9 @@ function opac_authorities_admin_server_mapping_edit_form($form, &$form_state, $s
       '#options' => $vocabulary_fields_opt,
     );
     $form['taxonomy_rule']['nomatch_rule'] = array(
-      '#title' => 'No match rule',
+      '#title' => t('No match rule'),
       '#type' => 'select',
-      '#options' => array('none' => 'Leave empty', 'create' => 'Create new term'),
+      '#options' => array('none' => t('Leave empty'), 'create' => t('Create new term')),
       '#default_value' => $new ? 'none' : $mapping['mapped'][$fieldname]['nomatch_rule'],
     );
   }
@@ -545,7 +545,7 @@ function opac_authorities_admin_server_mapping_edit_form($form, &$form_state, $s
  */
 function opac_authorities_get_field_descrition($serv_id, $name) {
   if (!$name) {
-    return "<div class='description'>Select a field to be mapped with current node field.</div>";
+    return '<div class="description">' . t('Select a field to be mapped with current authority field.') . '</div>';
   }
   $server = opac_server_load($serv_id);
   $connector = opac_get_instance($server);
@@ -553,7 +553,9 @@ function opac_authorities_get_field_descrition($serv_id, $name) {
   $label = $connector_fields[$name]['label'];
   $description = $connector_fields[$name]['description'];
 
-  return "<div><strong>Description of $label field:</strong><div class='description'>$description</div>";
+  $return = '<div><strong>' . t('Description of @label field: ', array('@label' => $label));
+  $return .= '</strong><div class="description">' . t($description) . '</div>';
+  return $return;
 }
 
 /**

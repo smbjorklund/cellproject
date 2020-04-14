@@ -13,12 +13,11 @@
  * Allow editors to log in w/ their credentials.
  */
 
-// A registry of variable_get defaults.
-include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_ustream') . '/includes/media_ustream.variables.inc';
+define('MEDIA_USTREAM_REST_API', 'https://api.ustream.tv');
 
 // Hooks and callbacks for integrating
 // with File Entity module for display.
-include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_ustream') . '/includes/media_ustream.formatters.inc';
+require_once dirname(__FILE__) . '/includes/media_ustream.formatters.inc';
 
 /**
  * Implements hook_media_internet_providers().
@@ -53,7 +52,7 @@ function media_ustream_theme($existing, $type, $theme, $path) {
     'media_ustream_video' => array(
       'variables' => array('uri' => NULL, 'options' => array()),
       'file' => 'media_ustream.theme.inc',
-      'path' => $path . '/includes/themes',
+      'path' => $path . '/themes',
       'template' => 'media-ustream-video',
     ),
   );
@@ -66,27 +65,4 @@ function media_ustream_theme($existing, $type, $theme, $path) {
  */
 function media_ustream_file_mimetype_mapping_alter(&$mapping) {
   $mapping['mimetypes'][] = 'video/ustream';
-}
-
-/**
- * Implements hook_file_default_types_alter().
- *
- * Adds the video/youtube fake mimetype to video files.
- */
-function media_ustream_file_default_types_alter(&$types) {
-  $types['video']->mimetypes[] = 'video/ustream';
-}
-
-/**
- * Implements hook_ctools_plugin_api().
- */
-function media_ustream_ctools_plugin_api($owner, $api) {
-  static $api_versions = array(
-    'file_entity' => array(
-      'file_default_displays' => 1,
-    ),
-  );
-  if (isset($api_versions[$owner][$api])) {
-    return array('version' => $api_versions[$owner][$api]);
-  }
 }

@@ -191,6 +191,7 @@ class RestWSEntityResourceController implements RestWSQueryResourceControllerInt
     if (!empty($diff)) {
       throw new RestWSException('Unknown data properties: ' . implode(' ', array_keys($diff)) . '.', 406);
     }
+    $this->validateFields($wrapper);
     $wrapper->save();
     return $wrapper->getIdentifier();
   }
@@ -219,6 +220,7 @@ class RestWSEntityResourceController implements RestWSQueryResourceControllerInt
     catch (EntityMetadataWrapperException $e) {
       throw new RestWSException($e->getMessage(), 406);
     }
+    $this->validateFields($wrapper);
     $wrapper->save();
   }
 
@@ -358,6 +360,13 @@ class RestWSEntityResourceController implements RestWSQueryResourceControllerInt
   protected function propertyQueryOperation(EntityFieldQuery $query, $operation, $property, $value) {
     $properties = $this->propertyInfo();
 
+    // Check property access.
+    if (!empty($properties[$property]['access callback'])) {
+      if (!call_user_func($properties[$property]['access callback'], 'view', $property, NULL, NULL, $this->resource())) {
+        throw new RestWSException(t('Not authorized to query property @p', array('@p' => $property)), 403);
+      }
+    }
+
     // If field is not set, then the filter is a property and we can extract
     // the schema field from the property array.
     if (empty($properties[$property]['field'])) {
@@ -429,4 +438,22 @@ class RestWSEntityResourceController implements RestWSQueryResourceControllerInt
     }
     return TRUE;
   }
+
+  /**
+   * Validates an entity's fields before they are saved.
+   *
+   * @param EntityDrupalWrapper $wrapper
+   *   A metadata wrapper for the entity.
+   *
+   * @throws RestWSException
+   */
+  protected function validateFields($wrapper) {
+    try {
+      field_attach_validate($wrapper->type(), $wrapper->value());
+    }
+    catch (FieldValidationException $e) {
+      throw new RestWSException($e->getMessage(), 422);
+    }
+  }
+
 }

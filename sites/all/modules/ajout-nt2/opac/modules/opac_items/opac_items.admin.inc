@@ -14,6 +14,10 @@ function opac_items_settings_form($form, $form_state) {
   $entity_info = entity_get_info('node');
   $view_modes = $entity_info['view modes'];
 
+  $form['opac_items_options'] = array(
+    '#markup' => '<b>' . t('Items options:') . '</b>',
+  );
+
   $form['opac_items_show_tab'] = array(
     '#type' => 'checkbox',
     '#title' => t('Show a tab on bibliographic record pages.', array(), array('context' => 'libraries')),
@@ -26,10 +30,20 @@ function opac_items_settings_form($form, $form_state) {
     '#default_value' => variable_get('opac_items_hide_no_items', 'FALSE'),
   );
 
+  $form['opac_items_hide_availability'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Hide items availibility', array(), array('context' => 'libraries')),
+    '#description' => t('Check this to hide availibility column in items tables'),
+    '#default_value' => variable_get('opac_items_hide_availability', FALSE),
+  );
+
+  $form['opac_items_display'] = array(
+    '#markup' => '<b>' . t('Items display:') . '</b>',
+  );
   foreach ($view_modes as $view_mode => $mode) {
     $form["display_settings_$view_mode"] = array(
       '#type' => 'fieldset',
-      '#title' => t($mode['label'] . ' display settings'),
+      '#title' => t('@mode display settings', array('@mode' => t($mode['label']))),
       '#states' => array(
         'visible' => array(
           ':input[name="opac_items_in_nodes"]' => array('checked' => TRUE),
@@ -120,6 +134,7 @@ function opac_items_settings_form_submit($form, $form_state) {
 
   variable_set('opac_items_show_tab', $values['opac_items_show_tab']);
   variable_set('opac_items_hide_no_items', $values['opac_items_hide_no_items']);
+  variable_set('opac_items_hide_availability', $values['opac_items_hide_availability']);
 
   foreach ($view_modes as $view_mode => $mode) {
     variable_set("opac_items_enable_field_$view_mode", $values["opac_items_enable_field_$view_mode"]);
@@ -131,7 +146,7 @@ function opac_items_settings_form_submit($form, $form_state) {
   }
 
   menu_rebuild();
-  drupal_set_message('Menu rebuilt');
+  drupal_set_message(t('Menu rebuilt'));
 }
 
 /**
@@ -155,7 +170,7 @@ function opac_items_server_settings_form($form, $form_state, $serv_id) {
 
   $form['and_or'] = array(
     '#type' => 'select',
-    '#title' => t('Hide @server_name items if', array('@server_name' => $server->serv_name)),
+    '#title' => t('Hide @server_name items if', array('@server_name' => $server->serv_name), array('context' => 'libraries')),
     '#options' => array(
       'and' => t('all the selected criteria are met'),
       'or' => t('at least one of the selected criteria is met'),
@@ -299,8 +314,8 @@ function opac_items_mapping_overview_form($form, $form_state, $serv_id) {
     $form[$key]['item_field'] = array('#markup' => check_plain($rule['item_field']));
     $form[$key]['display_header'] = array('#markup' => check_plain($rule['display_header']));
     $form[$key]['vocabulary_name'] = array(
-      '#markup' => $rule['vocabulary_machine_name']
-      ? l($rule['vocabulary_name'], 'admin/structure/taxonomy/' . $rule['vocabulary_machine_name'] . '/edit')
+      '#markup' => $rule['vocabulary_machine_name'] ?
+      l($rule['vocabulary_name'], 'admin/structure/taxonomy/' . $rule['vocabulary_machine_name'] . '/edit')
       . ' - ' . l(t('view terms list'), 'admin/structure/taxonomy/' . $rule['vocabulary_machine_name']) : '',
     );
 
@@ -316,7 +331,7 @@ function opac_items_mapping_overview_form($form, $form_state, $serv_id) {
 
     if ($rule['nomatch_rule'] != NULL) {
       $form[$key]['nomatch_rule'] = array(
-        '#markup' => $rule['nomatch_rule'] == 'none' ? 'Leave empty' : 'Create new term',
+        '#markup' => $rule['nomatch_rule'] == 'none' ? t('Leave empty') : t('Create new term'),
       );
     }
 
@@ -391,7 +406,7 @@ function opac_items_admin_field_edit_form($form, $form_state, $serv_id, $item_fi
   $connector_fields = $connector->itemFields();
   // Build fields options for item_field dropdown list
   // with 'none' default choice.
-  $fields_options = array('none' => 'Select a field');
+  $fields_options = array('none' => t('Select a field'));
   foreach ($connector_fields as $fieldid => $field) {
     $fields_options[$fieldid] = $field['label'];
   }
@@ -430,8 +445,9 @@ function opac_items_admin_field_edit_form($form, $form_state, $serv_id, $item_fi
   $form['field_description'] = array(
     // Populate this form element with field description.
     // The form is rebuilt during ajax processing.
-    '#markup' => isset($form_state['values'])
-    ? opac_items_get_field_description($serv_id, $form_state['values']['item_field']) : opac_items_get_field_description($serv_id, $mapping['item_field']),
+    '#markup' => isset($form_state['values']) ?
+    opac_items_get_field_description($serv_id, $form_state['values']['item_field']) :
+    opac_items_get_field_description($serv_id, $mapping['item_field']),
     '#prefix' => '<div id="replace_description_field">',
     '#suffix' => '</div>',
   );
@@ -440,7 +456,7 @@ function opac_items_admin_field_edit_form($form, $form_state, $serv_id, $item_fi
     '#size' => 25,
     '#title' => t('Displayed name'),
     '#default_value' => isset($mapping['display_header']) ? $mapping['display_header'] : '',
-    '#description' => t("The value which will be displayed in tbale header. i.e 'Item Location'."),
+    '#description' => t('The value which will be displayed in table header. i.e "Item Location".', array(), array('context' => 'libraries')),
   );
   $form['weight'] = array(
     '#type' => 'weight',
@@ -456,7 +472,7 @@ function opac_items_admin_field_edit_form($form, $form_state, $serv_id, $item_fi
 
   // Build vocabularies options for the select element.
   // And keep vocabulary machine name.
-  $vocabularies_options = array(0 => 'None');
+  $vocabularies_options = array(0 => t('None'));
   foreach ($vocabularies as $vocabulary) {
     $vocabularies_options[$vocabulary->machine_name] = $vocabulary->name;
   }
@@ -512,7 +528,7 @@ function opac_items_admin_field_edit_form($form, $form_state, $serv_id, $item_fi
     ),
   );
   $form['taxonomy_rule']['nomatch_rule'] = array(
-    '#title' => 'No match rule',
+    '#title' => t('No match rule'),
     '#type' => 'select',
     '#options' => array('none' => 'Leave empty', 'create' => 'Create new term'),
     '#default_value' => isset($mapping['nomatch_rule']) ? $mapping['nomatch_rule'] : 'none',
@@ -587,7 +603,10 @@ function opac_items_field_description_callback($form, &$form_state) {
  */
 function opac_items_get_field_description($serv_id, $item_field) {
   if ($item_field == 'none') {
-    return "<div class='description'>Select an item field to be displayed.</div>";
+    $return = '<div class="descriptionr">';
+    $return .= t('Select an item field to be displayed.', array('context' => 'libraries'));
+    $return .= '</div>';
+    return $return;
   }
   // Create an instance of the connector.
   $server = opac_server_load($serv_id);
@@ -598,7 +617,12 @@ function opac_items_get_field_description($serv_id, $item_field) {
   $label = $connector_fields[$item_field]['label'];
   $description = $connector_fields[$item_field]['description'];
 
-  return "<div><strong>Description of $label :</strong><div class='description'>$description</div>";
+  $return = '<div><strong>';
+  $return .= t('Description of @label : ', array('@label' => $label));
+  $return .= '</strong><div class="description">';
+  $return .= t($description);
+  $return .= '</div></div>';
+  return $return;
 
 }
 
@@ -611,10 +635,10 @@ function opac_items_admin_field_edit_form_validate($form, $form_state) {
   $values = $form_state['values'];
   // Check empty values.
   if ($values['item_field'] == 'none' || !$values['display_header']) {
-    form_set_error('items_admin_field_edit_form', 'Some required fields are missing');
+    form_set_error('items_admin_field_edit_form', t('Some required fields are missing'));
   }
   if ($values['has_taxonomy'] != 0 && !$values['vocabulary_machine_name']) {
-    form_set_error('items_admin_field_edit_form', 'Some required taxonomy fields are missing');
+    form_set_error('items_admin_field_edit_form', t('Some required taxonomy fields are missing'));
   }
 }
 
@@ -676,7 +700,7 @@ function opac_items_admin_field_delete_confirm_form($form, $form_state, $serv_id
     '#value' => $item_field,
   );
   $form['infos'] = array(
-    '#markup' => "Are you sure you want delete this mapping: '" . $mapping['item_field'] . " => " . $mapping['display_header'] . "' ?",
+    '#markup' => t('Are you sure you want delete this mapping: "@item_field => @display_header" ?', array('@item_field' => $mapping['item_field'], '@display_header' => $mapping['display_header'])),
   );
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['confirm'] = array('#type' => 'submit', '#value' => t('Confirm'));

@@ -1,23 +1,12 @@
 <?php
+
 /**
  * @file
  * Install, update, and uninstall functions for the toc module.
  */
- 
-/**
- * Implementation of hook_install().
- */
-function toc_install() {
-}
 
 /**
- * Implementation of hook_uninstall().
- */
-function toc_uninstall() {
-}
-
-/**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function toc_schema() {
   $schema['toc'] = array(
@@ -25,13 +14,52 @@ function toc_schema() {
       'nid' => array(
         'type' => 'int',
         'not null' => TRUE,
-        'default' => 0
+        'default' => 0,
+      ),
+      'vid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'indexes' => array(
       'nid' => array('nid'),
+      'vid' => array('vid'),
     ),
   );
 
   return $schema;
+}
+
+/**
+ * Add a new column (vid) to store the node revision.
+ */
+function toc_update_7100() {
+  $columns = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+
+  db_add_field('toc', 'vid', $columns);
+}
+
+/**
+ * Prepopulate the new column (vid) with the last revision id of each node.
+ */
+function toc_update_7101() {
+  $query = db_select('node', 'n');
+  $query->join('toc', 't', 'n.nid = t.nid');
+  $query->fields('n', array('nid', 'vid'));
+
+  $ids = $query->execute();
+
+  foreach ($ids as $id) {
+    db_update('toc')
+      ->fields(array(
+        'vid' => $id->vid,
+      ))
+      ->condition('nid', $id->nid)
+      ->execute();
+  }
 }

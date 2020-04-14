@@ -131,8 +131,8 @@ function opac_authorities_process_import($ids, &$process_status, $connector, $wa
 
     // Check if authority identifiers (server id and authority id)
     // already exist in drupal database.
-    $authid = isset($process_status['opac_authorities'][$process_status['serv_id']][$id])
-      ? $process_status['opac_authorities'][$process_status['serv_id']][$id] : NULL;
+    $authid = isset($process_status['opac_authorities'][$process_status['serv_id']][$id]) ?
+    $process_status['opac_authorities'][$process_status['serv_id']][$id] : NULL;
 
     // Processing authorities import.
     // Making them authority entities.

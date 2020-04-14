@@ -21,7 +21,8 @@ $handler->display->display_options['title'] = 'Content';
 $handler->display->display_options['css_class'] = 'admin-views-view';
 $handler->display->display_options['use_ajax'] = TRUE;
 $handler->display->display_options['use_more_always'] = FALSE;
-$handler->display->display_options['access']['type'] = 'menu';
+$handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'access administration pages';
 $handler->display->display_options['cache']['type'] = 'none';
 $handler->display->display_options['query']['type'] = 'views_query';
 $handler->display->display_options['query']['options']['distinct'] = TRUE;
@@ -376,6 +377,16 @@ $translatables['admin_views_node'] = array(
   t('No content available.'),
   t('author'),
   t('term'),
+  t('- Choose an operation -'),
+  t('Change author'),
+  t('Delete'),
+  t('Change value'),
+  t('Stick'),
+  t('Unstick'),
+  t('Promote to front page'),
+  t('Publish'),
+  t('Demote from front page'),
+  t('Unpublish'),
   t('Title'),
   t('Type'),
   t('Author'),

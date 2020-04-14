@@ -48,16 +48,20 @@ Drupal.behaviors.pupPlayer = {
       if (!this.options.cssSelectorAncestor) {
         this.options.cssSelectorAncestor = this.cssSelector.interface;
       }
+    }
 
-      $(this.cssSelector.player).jPlayer(this.options);
+    Playlist.prototype.attach = function(ctx) {
+      var self = this;
+
+      $(this.cssSelector.player, ctx).jPlayer(this.options);
 
       // Bind player buttons.
-      $(this.cssSelector.interface + ' .jp-previous').click(function() {
+      $(this.cssSelector.interface + ' .jp-previous', ctx).click(function() {
         self.previous();
         $(this).blur();
         return false;
       });
-      $(this.cssSelector.interface + ' .jp-next').click(function() {
+      $(this.cssSelector.interface + ' .jp-next', ctx).click(function() {
         self.next();
         $(this).blur();
         return false;
@@ -222,6 +226,8 @@ Drupal.behaviors.pupPlayer = {
      */
     Playlist.prototype.changeCurrentTrack = function(timestamp, forcePlay, forceChange) {
       var self = this;
+      // Check player status early.
+      var isPlaying = self.isPlaying();
       var currentTrack = $.jStorage.get('pup-current-track', 0);
       if (currentTrack != timestamp || forceChange) {
         var playlist = $.jStorage.get('pup-playlist', new Array());
@@ -233,8 +239,6 @@ Drupal.behaviors.pupPlayer = {
             // Switch CSS classes.
             $(self.cssSelector.playlist + ' ul .jp-playlist-current').removeClass('jp-playlist-current');
             $(self.makeTrackCssSelector(timestamp)).addClass('jp-playlist-current').parent().addClass('jp-playlist-current');
-            // Check player status before changing media.
-            var isPlaying = self.isPlaying();
             // Switch player track.
             $(self.cssSelector.player).jPlayer('setMedia', track);
             // Continue playing.
@@ -245,7 +249,8 @@ Drupal.behaviors.pupPlayer = {
           }
         });
       }
-      else if (!this.isPlaying()) {
+      else if (!isPlaying) {
+        // User clicked on the currentTrack, and it was not playing. Play it now.
         this.play();
       }
     }
@@ -274,13 +279,13 @@ Drupal.behaviors.pupPlayer = {
     /**
      * Set current track to the next one.
      */
-    Playlist.prototype.next = function() {
+    Playlist.prototype.next = function(forcePlay) {
       var playlist = $.jStorage.get('pup-playlist', new Array());
       var currentTrack = $.jStorage.get('pup-current-track', 0);
       for (var i = 0; i < playlist.length; i++) {
         if (playlist[i].timestamp == currentTrack) {
           if (i < playlist.length - 1) {
-            this.changeCurrentTrack(playlist[i + 1].timestamp);
+            this.changeCurrentTrack(playlist[i + 1].timestamp, forcePlay);
           }
           else if (i != 0) {
             this.changeCurrentTrack(playlist[0].timestamp);
@@ -337,21 +342,25 @@ Drupal.behaviors.pupPlayer = {
       }
     }
 
-    // Instanciate playlist.
-    var audioPlaylist = new Playlist({
-      ready: function() {
-        audioPlaylist.listenTrackAdditions();
-      },
-      ended: function() {
-        audioPlaylist.next();
-      },
-      play: function() {
-        $(this).jPlayer('pauseOthers');
-      },
-      swfPath: Drupal.settings.pup.swfPath,
-      supplied: 'mp3',
-      cssSelector: { videoPlay: '' } // Override default selector. No need for video playback area.
-    });
+    if (context == window.document) {
+      // Instanciate playlist.
+      window.document.pupAudioPlaylist = new Playlist({
+        ready: function() {
+          window.document.pupAudioPlaylist.listenTrackAdditions();
+        },
+        ended: function() {
+          window.document.pupAudioPlaylist.next(/*forcePlay=*/true);
+        },
+        play: function() {
+          $(this).jPlayer('pauseOthers');
+        },
+        swfPath: Drupal.settings.pup.swfPath,
+        supplied: 'mp3',
+        cssSelector: { videoPlay: '' } // Override default selector. No need for video playback area.
+      });
+    }
+
+    window.document.pupAudioPlaylist.attach(context);
   }
 };
 

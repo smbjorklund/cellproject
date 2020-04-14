@@ -34,7 +34,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     // Save our result to the cache array for our current key.
     $ids[$id] = $data;
     // Save our result to cache.
-    cache_set('media_ustream:vid:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 604800)); // 604800 = 1 week.
+    cache_set('media_ustream:vid:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 604800)); // 604800 = 1 week.
     return $data;
   }
 
@@ -59,7 +59,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     $response = drupal_http_request(MEDIA_USTREAM_REST_API . '/json/channel/' . $id . '/getInfo');
     $data = drupal_json_decode($response->data);
     $ids[$id] = $data;
-    cache_set('media_ustream:cid:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 3600)); // 3600 = 1 hour.
+    cache_set('media_ustream:cid:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 3600)); // 3600 = 1 hour.
     return $data;
   }
 
@@ -84,7 +84,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     $response = drupal_http_request(MEDIA_USTREAM_REST_API . '/json/user/' . $id . '/getInfo');
     $data = drupal_json_decode($response->data);
     $ids[$id] = $data;
-    cache_set('media_ustream:upid:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 3600));
+    cache_set('media_ustream:upid:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 3600));
     return $data;
   }
 
@@ -109,7 +109,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     $response = drupal_http_request(MEDIA_USTREAM_REST_API . '/json/user/' . $username . '/getUserId');
     $data = drupal_json_decode($response->data);
     $ids[$id] = $data;
-    cache_set('media_ustream:uid:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 3600));
+    cache_set('media_ustream:uid:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 3600));
     return $data;
   }
 
@@ -134,7 +134,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     $response = drupal_http_request(MEDIA_USTREAM_REST_API . '/json/user/' . $id . '/listAllChannels');
     $data = drupal_json_decode($response->data);
     $ids[$id] = $data;
-    cache_set('media_ustream:ucid:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 3600));
+    cache_set('media_ustream:ucid:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 3600));
     return $data;
   }
 
@@ -244,7 +244,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     if (!empty($properties) && empty($properties['error'])) {
       // Now set the cache with our newly validated properties per id.
       $ids[$id] = $properties;
-      cache_set('media_ustream:id:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 3600));
+      cache_set('media_ustream:id:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 3600));
       return $properties;
     }
     return FALSE;
@@ -403,7 +403,7 @@ class MediaInternetUStreamHandler extends MediaInternetBaseHandler {
     $data = drupal_json_decode($response->data);
     if (empty($response->error)) {
       $ids[$id] = $data;
-      cache_set('media_ustream:oembed:' . $id, $ids[$id], 'cache_media_xml', media_variable_get('xml_cache_expire', 3600));
+      cache_set('media_ustream:oembed:' . $id, $ids[$id], 'cache_media_xml', variable_get('media__xml_cache_expire', 3600));
       return $data;
     }
     return NULL;

@@ -33,8 +33,8 @@ function opac_plugin_taxonomy($record, $mapping) {
   $content_type = $mapping['content_type'];
   $node_field_info = _opac_field_info($node_field_name, $content_type);
   $vocabulary_machine_name = $node_field_info['settings']['allowed_values'][0]['vocabulary'];
-  $term_field = _opac_entity_has_field('taxonomy_term', $mapping['term_field'], $vocabulary_machine_name)
-    ? $mapping['term_field'] : 'name';
+  $term_field = _opac_entity_has_field('taxonomy_term', $mapping['term_field'], $vocabulary_machine_name) ?
+    $mapping['term_field'] : 'name';
 
   // Get related vocabulary id.
   $vid = _opac_taxonomy_get_vid($vocabulary_machine_name);

@@ -1,6 +1,7 @@
 name = Cincopa Multimedia Platform
 description = Cincopa Multimedia Platform Drupal Plugin
 package = Input filters
+dependencies[] = wysiwyg
 core = 7.x
 ; Information added by drupal.org packaging script on 2010-10-04
 version = "7.x-1.2"
@@ -9,9 +10,9 @@ project = "cincopa"
 datestamp = "1286232060"
 
 
-; Information added by drupal.org packaging script on 2013-08-22
-version = "7.x-2.0"
+; Information added by Drupal.org packaging script on 2017-07-29
+version = "7.x-2.8"
 core = "7.x"
 project = "cincopa"
-datestamp = "1377185767"
+datestamp = "1501328044"
 

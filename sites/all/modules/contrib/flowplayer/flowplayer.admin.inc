@@ -10,6 +10,17 @@
  */
 function flowplayer_admin_settings() {
   $form = array();
+
+  $flowplayer_path = flowplayer_get_path();
+
+  $form['flowplayer_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Flowplayer Library Path'),
+    '#default_value' => $flowplayer_path,
+    '#description' => t('The location where Flowplayer and plugins are installed. Relative paths are from the Drupal root directory.'),
+    '#after_build' => array('_flowplayer_admin_settings_check_plugin_path'),
+  );
+
   $form['flowplayer_key'] = array(
     '#type' => 'textfield',
     '#title' => t('License Key'),
@@ -130,4 +141,22 @@ function flowplayer_admin_settings() {
   );
 
   return system_settings_form($form);
+}
+
+/**
+ * Checks if the directory in $form_element exists and contains a file named
+ * 'flowplayer.swf'. If validation fails, the form element is flagged
+ * with an error from within the file_check_directory function.
+ *
+ * @param $form_element
+ *   The form element containing the name of the directory to check.
+ */
+function _flowplayer_admin_settings_check_plugin_path($form_element) {
+  $library_path = $form_element['#value'];
+
+  if(!is_dir($library_path) || !_flowplayer_get_js_path() || !_flowplayer_get_swf_path()){
+    form_set_error($form_element['#parents'][0], t('You need to download and set up flowplayer. For more information see README.txt.'));
+  }
+
+  return $form_element;
 }

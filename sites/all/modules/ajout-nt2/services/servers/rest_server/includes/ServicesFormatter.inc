@@ -18,7 +18,7 @@ class ServicesJSONFormatter implements ServicesFormatterInterface {
     if (is_scalar($data)) {
       $data = array($data);
     }
-    return str_replace('\\/', '/', json_encode($data));
+    return str_replace('\\/', '/', json_encode($data, JSON_PARTIAL_OUTPUT_ON_ERROR));
   }
 }
 
@@ -27,7 +27,7 @@ class ServicesJSONPFormatter extends ServicesJSONFormatter {
     $json = parent::render($data);
 
     if (isset($_GET['callback'])) {
-      $callback = preg_replace("/[^A-Za-z0-9_\-]/", '', $_GET['callback']);
+      $callback = preg_replace("/[^A-Za-z0-9_\-\.]/", '', $_GET['callback']);
       $callback = substr($callback, 0, 60);
       return sprintf('%s(%s);', $callback, $json);
     }

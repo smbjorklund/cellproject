@@ -21,7 +21,8 @@ $handler->display->display_options['title'] = 'Users';
 $handler->display->display_options['css_class'] = 'admin-views-view';
 $handler->display->display_options['use_ajax'] = TRUE;
 $handler->display->display_options['use_more_always'] = FALSE;
-$handler->display->display_options['access']['type'] = 'menu';
+$handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'access administration pages';
 $handler->display->display_options['cache']['type'] = 'none';
 $handler->display->display_options['query']['type'] = 'views_query';
 $handler->display->display_options['query']['options']['query_comment'] = FALSE;
@@ -133,8 +134,15 @@ $handler->display->display_options['fields']['views_bulk_operations']['vbo_opera
     'label' => '',
     'postpone_processing' => 0,
   ),
-  'action::views_bulk_operations_delete_item' => array(
+  'action::views_bulk_operations_user_cancel_action' => array(
     'selected' => 1,
+    'skip_confirmation' => 0,
+    'override_label' => 0,
+    'label' => '',
+    'postpone_processing' => 0,
+  ),
+  'action::views_bulk_operations_delete_item' => array(
+    'selected' => 0,
     'skip_confirmation' => 0,
     'override_label' => 1,
     'label' => 'Delete',
@@ -327,6 +335,12 @@ $translatables['admin_views_user'] = array(
   t('next ›'),
   t('last »'),
   t('No users available.'),
+  t('- Choose an operation -'),
+  t('Ban IP address of the current user'),
+  t('Delete'),
+  t('Change value'),
+  t('Change user roles'),
+  t('Send e-mail'),
   t('Name'),
   t('Active'),
   t('Roles'),

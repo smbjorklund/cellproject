@@ -11,21 +11,18 @@
  * Run test cases for the endpoint with no authentication turned on.
  *
  */
-class ServicesResourceUsertests extends ServicesWebtestCase {
+class ServicesResourceUsertests extends ServicesWebTestCase {
   // Class variables
   protected $privileged_user = NULL ;
   // Endpoint details.
   protected $endpoint = NULL;
 
   /**
-   * Implementation of setUp().
+   * {@inheritdoc}
    */
-  public function setUp() {
-    parent::setUp(
-      'ctools',
-      'services',
-      'rest_server'
-    );
+  public function setUp(array $modules = array()) {
+    parent::setUp($modules);
+
     // Set up endpoint.
     $this->endpoint =  $this->saveNewEndpoint();
     // Set up privileged user and login.
@@ -38,11 +35,14 @@ class ServicesResourceUsertests extends ServicesWebtestCase {
    * Implementation of getInfo().
    */
   public static function getInfo() {
-   return array(
-     'name'        => 'Resource User',
-     'description' => 'Test the resource User methods and actions.',
-     'group'       => 'Services',
-   );
+    return array(
+      'name'        => 'Resource User',
+      'description' => 'Test the resource User methods and actions.',
+      'group'       => 'Services',
+      // The libraries module is required by rest_service, which is used by
+      // ServicesEndpointTests.
+      'dependencies' => array('ctools', 'libraries'),
+    );
   }
 
   /**

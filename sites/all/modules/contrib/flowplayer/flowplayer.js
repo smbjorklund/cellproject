@@ -51,6 +51,11 @@
       // onload
       jQuery.each(settings.flowplayer, function(selector, config) {
 
+        // Don't let broken settings break JavaScript.
+        if (!config) {
+          return true;
+        }
+
         // Convert any player object events to JavaScript calls.
         var playerEvents = [
         'onBeforeClick',

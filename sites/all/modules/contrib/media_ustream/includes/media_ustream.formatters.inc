@@ -16,9 +16,16 @@ function media_ustream_file_formatter_info() {
     'view callback' => 'media_ustream_file_formatter_video_view',
     'settings callback' => 'media_ustream_file_formatter_video_settings',
   );
-  foreach (media_ustream_variable_default() as $setting => $default_value) {
-    $formatters['media_ustream_video']['default settings'][$setting] = media_ustream_variable_get($setting);
-  }
+
+  $formatters['media_ustream_video']['default settings'] = array(
+    'width' => 640,
+    'height' => 393,
+    'autoplay_live' => FALSE,
+    'autoplay_recorded' => FALSE,
+    'new_player' => TRUE,
+    'player_color' => '',
+    'custom_color' => '',
+  );
 
   $formatters['media_ustream_image'] = array(
     'label' => t('UStream Preview Image'),
@@ -28,6 +35,7 @@ function media_ustream_file_formatter_info() {
     ),
     'view callback' => 'media_ustream_file_formatter_image_view',
     'settings callback' => 'media_ustream_file_formatter_image_settings',
+    'mime types' => array('video/ustream'),
   );
   return $formatters;
 }
@@ -44,7 +52,7 @@ function media_ustream_file_formatter_video_view($file, $display, $langcode) {
       '#uri' => $file->uri,
       '#options' => array(),
     );
-    foreach (media_ustream_variable_default() as $setting => $default_value) {
+    foreach (array('width', 'height', 'autoplay_live', 'autoplay_recorded', 'new_player', 'player_color', 'custom_color') as $setting) {
       $element['#options'][$setting] = isset($file->override[$setting]) ? $file->override[$setting] : $display['settings'][$setting];
     }
     return $element;
@@ -211,83 +219,4 @@ function media_ustream_file_formatter_image_settings($form, &$form_state, $setti
     '#empty_option' => t('None (original image)'),
   );
   return $element;
-}
-
-/**
- * Implements hook_file_default_displays().
- */
-function media_ustream_file_default_displays() {
-
-  // Default settings for displaying as a video.
-  $default_displays = array();
-
-  $default_video_settings = array(
-    'default' => array(
-      'width' => 640,
-      'height' => 393,
-      'autoplay_live' => FALSE,
-      'autoplay_recorded' => FALSE,
-    ),
-    'teaser' => array(
-      'width' => 560,
-      'height' => 348,
-      'autoplay_live' => FALSE,
-      'autoplay_recorded' => FALSE,
-    ),
-
-    // Legacy view modes included to support  Media 1.x.
-    // They do no harm and can sit here just fine.
-    'media_large' => array(
-      'width' => 560,
-      'height' => 348,
-      'autoplay_live' => FALSE,
-      'autoplay_recorded' => FALSE,
-    ),
-    'media_original' => array(
-      'width' => 640,
-      'height' => 393,
-      'autoplay_live' => media_ustream_variable_get('autoplay_live'),
-      'autoplay_recorded' => media_ustream_variable_get('autoplay_recorded'),
-    ),
-
-  );
-  foreach ($default_video_settings as $view_mode => $settings) {
-    $display_name = 'video__' . $view_mode . '__media_ustream_video';
-    $default_displays[$display_name] = (object) array(
-      'api_version' => 1,
-      'name' => $display_name,
-      'status' => 1,
-      'weight' => 1,
-      'settings' => $settings,
-    );
-  }
-
-  // Default settings for displaying a video preview image.
-  // We enable preview images even for view modes that also play video
-  // for use inside a running WYSIWYG editor. We weight them so video
-  // formatters come first in the cascade to make sure the video formatter
-  // is used whenever possible.
-  $default_image_styles = array(
-    'default' => 'large',
-    'preview' => 'square_thumbnail',
-    'teaser' => 'large',
-
-    // Legacy view modes, see note above.
-    'media_preview' => 'square_thumbnail',
-    'media_large' => 'large',
-    'media_original' => '',
-
-  );
-  foreach ($default_image_styles as $view_mode => $image_style) {
-    $display_name = 'video__' . $view_mode . '__media_ustream_image';
-    $default_displays[$display_name] = (object) array(
-      'api_version' => 1,
-      'name' => $display_name,
-      'status' => 1,
-      'weight' => 2,
-      'settings' => array('image_style' => $image_style),
-    );
-  }
-
-  return $default_displays;
 }

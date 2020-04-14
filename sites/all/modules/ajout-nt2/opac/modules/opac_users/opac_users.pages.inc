@@ -181,11 +181,11 @@ function opac_users_library_account_form($form, &$form_state) {
   }
   else {
     if ($opac_users_auth_method == 1) {
-      $markup = t("ILS authentication is configured to use your Drupal credentials.")
+      $markup = t('ILS authentication is configured to use your Drupal credentials.', array(), array('context' => 'libraries'))
         . " " . t("This page should not be used.");
     }
     else {
-      $markup = t("ILS authentication is disabled.");
+      $markup = t('ILS authentication is disabled.', array(), array('context' => 'libraries'));
     }
     $form['information'] = array(
       '#markup' => $markup,
@@ -287,7 +287,10 @@ function opac_users_holditem_form($form, &$form_state, $node, $itemid = NULL) {
     $form['message'] = array(
       '#markup' => "<h4>" . t("You are not allowed to hold any items for this library", array(), array('context' => 'libraries')) . "</h4>",
     );
-    $form['back'] = array('#type' => 'submit', '#value' => t('Back to items list'));
+    $form['back'] = array(
+      '#type' => 'submit',
+      '#value' => t('Back to items list', array(), array('context' => 'libraries')),
+    );
     return $form;
   }
   $patron_id = $opac_user['opac_user_id'];
@@ -304,7 +307,7 @@ function opac_users_holditem_form($form, &$form_state, $node, $itemid = NULL) {
         '#markup' => "<h4>" . t("You are not allowed to hold this item", array(), array('context' => 'libraries')) . "</h4>",
       );
       $form['back'] = array(
-        '#markup' => l(t('Go back to items list'), 'node/' . $node->nid . '/items'),
+        '#markup' => l(t('Go back to items list', array(), array('context' => 'libraries')), 'node/' . $node->nid . '/items'),
       );
       return $form;
     }
@@ -314,7 +317,7 @@ function opac_users_holditem_form($form, &$form_state, $node, $itemid = NULL) {
       '#markup' => "<h4>" . t("You are not allowed to hold this title", array(), array('context' => 'libraries')) . "</h4>",
     );
     $form['back'] = array(
-      '#markup' => l(t('Go back to record'), 'node/' . $node->nid),
+      '#markup' => l(t('Go back to record', array(), array('context' => 'libraries')), 'node/' . $node->nid),
     );
     return $form;
   }
@@ -328,7 +331,7 @@ function opac_users_holditem_form($form, &$form_state, $node, $itemid = NULL) {
   $form['opacuserid'] = array('#type' => 'hidden', '#value' => $patron_id);
 
   $form['message'] = array(
-    '#markup' => "<h4>" . t("Please confirm you want to hold") . ' ' . l($node->title, "node/$node->nid") . "</h4>",
+    '#markup' => "<h4>" . t('Please confirm you want to hold', array(), array('context' => 'libraries')) . ' ' . l($node->title, "node/$node->nid") . "</h4>",
   );
 
   // Get specific ILS hold form.
@@ -342,8 +345,14 @@ function opac_users_holditem_form($form, &$form_state, $node, $itemid = NULL) {
   }
 
   $form['actions'] = array('#type' => 'actions');
-  $form['actions']['confirm'] = array('#type' => 'submit', '#value' => t('Confirm hold'));
-  $form['actions']['back'] = array('#type' => 'submit', '#value' => t('Back to items list'));
+  $form['actions']['confirm'] = array(
+    '#type' => 'submit',
+    '#value' => t('Confirm hold', array(), array('context' => 'libraries')),
+  );
+  $form['actions']['back'] = array(
+    '#type' => 'submit',
+    '#value' => t('Back to items list', array(), array('context' => 'libraries')),
+  );
 
   return $form;
 }
@@ -398,7 +407,7 @@ function opac_users_cancelhold_form($form, &$form_state, $node, $itemid) {
 
   // Ask the user for confirm or not.
   $form['message'] = array(
-    '#markup' => "<h4>" . t("Please confirm you want to cancel hold on") . ' ' . l($node->title, "node/$node->nid") . "</h4>",
+    '#markup' => "<h4>" . t('Please confirm you want to cancel hold on', array(), array('context' => 'libraries')) . ' ' . l($node->title, "node/$node->nid") . "</h4>",
   );
   $form['submit'] = array('#type' => 'submit', '#value' => t('Confirm'));
   return $form;
@@ -420,10 +429,10 @@ function opac_users_cancelhold_form_submit($form, &$form_state) {
   }
 
   if ($result) {
-    drupal_set_message(t('Hold canceled with success'), 'status', TRUE);
+    drupal_set_message(t('Hold canceled with success', array(), array('context' => 'libraries')), 'status', TRUE);
   }
   else {
-    drupal_set_message(t('Unable to cancel hold'), 'error', TRUE);
+    drupal_set_message(t('Unable to cancel hold', array(), array('context' => 'libraries')), 'error', TRUE);
   }
   ctools_include('object-cache');
   ctools_object_cache_clear('opac_users_page', 'holds');
@@ -451,7 +460,7 @@ function opac_users_renewloan_form($form, &$form_state, $node, $itemid) {
 
   // Ask the user for confirm or not.
   $form['message'] = array(
-    '#markup' => "<h4>" . t("Please confirm you want to renew this loan:") . ' ' . l($node->title, "node/$node->nid") . "</h4>",
+    '#markup' => "<h4>" . t('Please confirm you want to renew this loan: ', array(), array('context' => 'libraries')) . l($node->title, "node/$node->nid") . "</h4>",
   );
   $form['submit'] = array('#type' => 'submit', '#value' => t('Confirm'));
   return $form;
@@ -477,7 +486,7 @@ function opac_users_renewloan_form_submit($form, &$form_state) {
     drupal_set_message(t('Renew success'), 'status', TRUE);
   }
   else {
-    drupal_set_message(t('Unable to renew loan'), 'error', TRUE);
+    drupal_set_message(t('Unable to renew loan', array(), array('context' => 'libraries')), 'error', TRUE);
   }
   ctools_include('object-cache');
   ctools_object_cache_clear('opac_users_page', 'checkouts');

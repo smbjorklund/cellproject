@@ -5,7 +5,13 @@
  * Provides integration with FlowPlayer.
  */
 
+/*
+ * The default path to the FlowPlayer directory.
+ */
+define('FLOWPLAYER_PATH', 'sites/all/libraries/flowplayer');
+
 /**
+
  * Implementation of hook_help().
  *
  * The code provided in this function is a demonstration of how to use jcarousel_add().
@@ -88,15 +94,23 @@ function flowplayer_add($selector = NULL, $config = NULL) {
   static $flowplayer_added = FALSE;
   static $flowplayer_selectors = array();
 
+  // Get path to flowplayer libraries.
+  $flowplayer_path = flowplayer_get_path();
+
+  if (!$flowplayer_path) {
+    watchdog('flowplayer', 'Flowplayer was not found. Please read the manual for mor instructions on how to set up flowplayer.', array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
   // Add Flowplayer to the page if it hasn't been added yet.
   if ($flowplayer_added === FALSE) {
     // Add the FlowPlayer JavaScript and CSS to the page.
-    drupal_add_js(drupal_get_path('module', 'flowplayer') . '/flowplayer/example/flowplayer.min.js');
+    drupal_add_js(_flowplayer_get_js_path());
     drupal_add_css(drupal_get_path('module', 'flowplayer') . '/flowplayer.css');
 
     // Tell the JavaScript where flowplayer.swf is.
     $settings = array(
-      'flowplayerSwf' => drupal_get_path('module', 'flowplayer') . '/flowplayer/flowplayer.swf',
+      'flowplayerSwf' => _flowplayer_get_swf_path(),
     );
     drupal_add_js($settings, 'setting');
     $flowplayer_added = TRUE;
@@ -239,4 +253,66 @@ function theme_flowplayer($variables) {
 
   // Return the markup.
   return "<div id='$id' $attributes></div>";
+}
+
+/**
+ * Return the path to the Flowplayer plugins.
+ */
+function flowplayer_get_path() {
+  static $library_path = NULL;
+
+  // Try to locate the library path in any possible setup.
+  if ($library_path == NULL) {
+    // First check the default location.
+    $path = variable_get('flowplayer_path', FLOWPLAYER_PATH);
+    if (is_dir($path)) {
+      $library_path = $path;
+    }
+    // Ask the libraries module as a fallback.
+    elseif ($library_path == NULL && module_exists('libraries')) {
+      if ($path = libraries_get_path('flowplayer')) {
+        $library_path = $path;
+        variable_set('flowplayer_path', $library_path);
+      }
+    }
+    // If no path is found suggest the default one.
+    elseif ($library_path == NULL) {
+      $library_path = FLOWPLAYER_PATH;
+    }
+  }
+
+  return $library_path;
+}
+
+/**
+ * Get the path to the flowplayer.min.js file
+ *
+ * @return
+ */
+function _flowplayer_get_js_path() {
+  $library_path = flowplayer_get_path();
+  $files = glob($library_path . '/flowplayer.min.js');
+  return isset($files[0]) ? $files[0] : FALSE;
+}
+
+/**
+ * Get the path to the flowplayer.swf file
+ *
+ * @return
+ */
+function _flowplayer_get_swf_path() {
+  $library_path = flowplayer_get_path();
+  $files = glob($library_path . '/flowplayer.swf');
+  return isset($files[0])?$files[0]:false;
+}
+
+/**
+ * Get the path to the flowplayer.controls-X.X.X.swf file
+ *
+ * @return
+ */
+function _flowplayer_get_controls_swf_path(){
+  $library_path = flowplayer_get_path();
+  $files = glob($library_path."/flowplayer.controls-*.swf");
+  return isset($files[0])?$files[0]:false;
 }

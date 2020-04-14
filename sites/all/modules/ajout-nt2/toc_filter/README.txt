@@ -11,10 +11,10 @@ INTRODUCTION
 
 Converts header tags into a linked table of contents.
 
-This module is designed to be lightweight and accomplishs the very specific task
+This module is designed to be lightweight and accomplishes the very specific task
 of converting <h3> tags into an SEO friendly table of contents (TOC).
 
-If you need a more complete heirarchical table on contents check out the
+If you need a more complete hierarchical table on contents check out the
 'Table of Contents' module. (http://drupal.org/project/tableofcontents)
 
 
@@ -44,7 +44,7 @@ SIMILAR MODULES
 - Table of Contents: Adds a filter that generates Tables of contents for pages
   with  '[toc ...]' tags or that have a predetermined number of headers.
   http://drupal.org/project/tableofcontents
-  [A more powerful (and complex) solution to building heirachical TOCs]
+  [A more powerful (and complex) solution to building hierarchical TOCs]
 
 - Table of Contents: Automatically create table of contents (jumplinks) for
   long pages in Drupal

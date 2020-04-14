@@ -1,0 +1,34 @@
+.cke_combopanel, .cke_combo_button .cke_combo_text {width: auto !important;}
+.cincopa_help_wrapper {
+  display: inline-block;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  -webkit-border-radius: 4px;
+     -moz-border-radius: 4px;
+          border-radius: 4px;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+.cincopa_help_wrapper .icon-close {
+  float: right;
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  color: #CCC;
+  margin: -10px -10px 0;
+  background-image: url(plugin/images/close.png);
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  content: '';
+}
+.cincopa_help_wrapper .cincopa_help {
+  display: inline-block;
+  width: 100%;
+}
+.cke_reset_all .cke_dialog {
+  z-index: 10001 !important;
+}
+.cke_reset_all .cke_dialog .cke_dialog_contents .cke_dialog_footer { display: none; } 

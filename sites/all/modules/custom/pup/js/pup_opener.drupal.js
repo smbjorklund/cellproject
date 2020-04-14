@@ -13,14 +13,18 @@ Drupal.behaviors.pupOpener = {
       this.interval = null; // Interval for checking removals from playlist.
       this.updateTrackCount(); // Initial update.
       this.listenTrackRemoval();
+    }
 
+    Opener.prototype.attach = function(ctx) {
+      var self = this;
       // Attach player opening function.
-      $('.pup-opener').click(function(event) {
+      $('.pup-opener', ctx).click(function(event) {
+        event.preventDefault(); // Do not follow the link.
         self.open();
       });
 
       // Attach playlist add function.
-      $('.pup-playlist-add a').click(function(event) {
+      $('.pup-playlist-add a', ctx).click(function(event) {
         event.preventDefault(); // Do not follow the link.
 
         if (Drupal.settings.pup.addLinkActiveColor && Drupal.settings.pup.addLinkNormalColor) {
@@ -53,7 +57,7 @@ Drupal.behaviors.pupOpener = {
       }
 
       // Open window without location to retrieve its reference if it exists.
-      var playerWindow = window.open('', 'pup', 'width=450,height=300,location=no,menubar=no,resizable=yes,scrollbars=yes,status=no,toolbar=no');
+      var playerWindow = window.open('', 'pup', 'width=450,height=300,personalbar=no,location=no,menubar=no,resizable=yes,scrollbars=yes,status=no,toolbar=no');
       if (!playerWindow || playerWindow.location.href != window.location.origin + Drupal.settings.pup.playerPath) {
         playerWindow = window.open(Drupal.settings.pup.playerPath, 'pup');
       }
@@ -129,8 +133,12 @@ Drupal.behaviors.pupOpener = {
       $('.pup-opener-count').html(' (' + message + ')'); // TODO: Theme function.
     }
 
-    // Add open handler.
-    var opener = new Opener();
+    if (context == window.document) {
+      // Add open handler.
+      window.document.pupOpener = new Opener();
+    }
+
+    window.document.pupOpener.attach(context);
   }
 };
 

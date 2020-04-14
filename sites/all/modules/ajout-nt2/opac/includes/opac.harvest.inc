@@ -115,21 +115,22 @@ function opac_process_import($ids, &$process_status, $connector, $wanted_fields,
   // Processing biblios request.
   $bibs = $connector->getBiblios($ids, $wanted_fields);
 
-  // If GetBiblios returned a negative value, it had troubles retrieving this batch.
+  // If GetBiblios returned a negative value,
+  // it had troubles retrieving this batch.
   if ($bibs < 0) {
-      if ($bibs == -2) {
-        error_log("It seems that the ILS webservice is disabled (or you don't have the permissions to access it)");
-      }
-      error_log("Unable to get biblios for this batch, aborting.");
-      return;
+    if ($bibs == -2) {
+      error_log("It seems that the ILS webservice is disabled (or you don't have the permissions to access it)");
+    }
+    error_log("Unable to get biblios for this batch, aborting.");
+    return;
   }
 
   $count = 0;
   foreach ($bibs as $id => $bib) {
     // Check if biblio identifiers (server id and record id)
     // already exist in drupal database (nodes).
-    $nid = isset($process_status['opac_nodes'][$process_status['serv_id']][$id])
-      ? $process_status['opac_nodes'][$process_status['serv_id']][$id] : NULL;
+    $nid = isset($process_status['opac_nodes'][$process_status['serv_id']][$id]) ?
+    $process_status['opac_nodes'][$process_status['serv_id']][$id] : NULL;
 
     // Skip node update if create_only is TRUE.
     if ($nid && $process_status['create_only']) {
@@ -219,8 +220,7 @@ function opac_process_update($nodes) {
       if ($type) {
         $bib['opac_content_type'] = $type;
       }
-      $nid = isset($opac_nodes[$serv_id][$id])
-          ? $opac_nodes[$serv_id][$id] : NULL;
+      $nid = isset($opac_nodes[$serv_id][$id]) ? $opac_nodes[$serv_id][$id] : NULL;
       // Processing biblios import.
       // Making them nodes.
       $nid = opac_import_record($server->serv_id, $id, $mapping, $bib, $nid);

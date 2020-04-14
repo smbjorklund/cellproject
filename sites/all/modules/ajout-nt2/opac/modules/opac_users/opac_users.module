@@ -206,7 +206,7 @@ function opac_users_menu() {
  * Title callback for admin/config/opac/opac_users/fields/edit/%/%.
  */
 function opac_users_field_edit_title_callback($server, $field) {
-  return "Configure '$server' mapping for '$field' field";
+  return t('Configure @server mapping for @field field', array('@server' => $server, '@field' => $field));
 }
 
 /**
@@ -352,8 +352,8 @@ function _opac_users_fields_cmp_weight($a, $b) {
  */
 function _opac_users_fields($serv_id, $connector_fields, $region) {
   $opac_users_fields = variable_get('opac_users_fields', array());
-  $region_fields = isset($opac_users_fields[$serv_id][$region])
-    ? $opac_users_fields[$serv_id][$region] : array();
+  $region_fields = isset($opac_users_fields[$serv_id][$region]) ?
+  $opac_users_fields[$serv_id][$region] : array();
   foreach ($connector_fields as $name => $connector_field) {
     if (!isset($region_fields[$name])) {
       $region_fields[$name] = array(
@@ -441,8 +441,8 @@ function theme_opac_users_checkouts($elements) {
         $node = node_load($nid);
       }
 
-      $checkout['title'] = ($node && $node->nid)
-        ? l($checkout['title'], "node/$node->nid") : $checkout['title'];
+      $checkout['title'] = ($node && $node->nid) ?
+      l($checkout['title'], "node/$node->nid") : $checkout['title'];
 
       // Add a link to renew the checkout if it is possible.
       if ($show_renew_link) {
@@ -501,7 +501,7 @@ function theme_opac_users_checkouts($elements) {
   $theme_variables = array(
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('You have nothing checked out.'),
+    'empty' => t('You have nothing checked out.', array(), array('context' => 'libraries')),
     'attributes' => array('class' => array('opac_users_checkouts_holds_tables', 'opac_users_checkouts')),
   );
   return theme('table', $theme_variables);
@@ -617,7 +617,7 @@ function theme_opac_users_holds($elements) {
   $theme_variables = array(
     'header' => $header,
     'rows' => $rows,
-    'empty' => t("You have nothing on hold"),
+    'empty' => t('You have nothing on hold', array(), array('context' => 'libraries')),
     'attributes' => array('class' => array('opac_users_checkouts_holds_tables', 'opac_users_holds')),
   );
   return theme('table', $theme_variables);
@@ -675,8 +675,8 @@ function theme_opac_users_issues_history($elements) {
         $node = node_load($nid);
       }
 
-      $issue['title'] = ($node && $node->nid)
-        ? l($issue['title'], "node/$node->nid") : $issue['title'];
+      $issue['title'] = ($node && $node->nid) ?
+      l($issue['title'], "node/$node->nid") : $issue['title'];
 
       $row = array();
       foreach ($fields as $name => $field) {
@@ -698,7 +698,7 @@ function theme_opac_users_issues_history($elements) {
 
       // If there is no return date, it means the item is still checked out.
       if (array_key_exists('returndate', $row) && !$row['returndate']) {
-        $row['returndate']['data'] = t('Checked out');
+        $row['returndate']['data'] = t('Checked out', array(), array('context' => 'libraries'));
       }
 
       $rows[$key] = array(
@@ -711,7 +711,7 @@ function theme_opac_users_issues_history($elements) {
   $theme_variables = array(
     'header' => $header,
     'rows' => $rows,
-    'empty' => t('You have nothing checked out.'),
+    'empty' => t('You have nothing checked out.', array(), array('context' => 'libraries')),
     'attributes' => array('class' => array('opac_users_issues_history')),
   );
   return theme('table', $theme_variables);
@@ -1002,7 +1002,8 @@ function opac_users_user_view($account, $view_mode, $langcode) {
   if (isset($server_id)) {
     $server = opac_server_load($server_id);
     if (!$server) {
-      drupal_set_message("Server $server_id does not exist (user " . $account->uid . ')', 'error');
+      $message = t('Server @server_id does not exist (user @uid )', array('@server_id' => $server_id, '@uid' => $account->uid));
+      drupal_set_message($message, 'error');
       return;
     }
     $connector = opac_get_instance($server);
@@ -1064,7 +1065,7 @@ function opac_users_opac_items_data_alter(&$data) {
   if (user_access('hold items')) {
     $data['mapping'][] = array(
       'item_field' => 'hold_link',
-      'display_header' => 'Operations',
+      'display_header' => t('Operations'),
       'weight' => '50',
     );
     $nid = $data['nid'];
@@ -1266,10 +1267,10 @@ function opac_users_user_profile_form_submit(&$form, &$form_state) {
       $connector = opac_get_instance($server);
       $success = $connector->changePassword($name, $pass);
       if ($success != 1) {
-        drupal_set_message(t("Password change failed for OPAC ") . $server->serv_name, 'error');
+        drupal_set_message(t('Password change failed for OPAC server @serv_name', array('@serv_name' => $server->serv_name)), 'error');
       }
       else {
-        drupal_set_message(t("Password change successed for OPAC ") . $server->serv_name, 'status');
+        drupal_set_message(t('Password change successed for OPAC server @serv_name', array('@serv_name' => $server->serv_name)), 'status');
       }
     }
     // Reauthenticate user, so its pass is still correct against the OPAC

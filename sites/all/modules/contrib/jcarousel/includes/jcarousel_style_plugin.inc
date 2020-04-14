@@ -16,12 +16,12 @@ class jcarousel_style_plugin extends views_plugin_style {
     $options['wrap'] = array('default' => NULL);
     $options['skin'] = array('default' => 'default');
     $options['visible'] = array('default' => NULL);
+    $options['responsive'] = array('default' => 0);
     $options['scroll'] = array('default' => '');
     $options['auto'] = array('default' => 0);
     $options['autoPause'] = array('default' => '1');
     $options['animation'] = array('default' => '');
     $options['start'] = array('default' => '1');
-    $options['start_css'] = array('default' => '');
     $options['easing'] = array('default' => NULL);
     $options['vertical'] = array('default' => FALSE);
     $options['navigation'] = array('default' => '');
@@ -40,8 +40,11 @@ class jcarousel_style_plugin extends views_plugin_style {
     $skins[''] = t('None');
 
     // Number of options to provide in count-based options.
-    $range = drupal_map_assoc(range(1, 10));
-    $auto_range = array('' => t('Auto')) + $range;
+    $start_range = range(-10, 10);
+    $range = drupal_map_assoc($start_range);
+    // Remove '0'.
+    unset($range[0]);
+    $auto_range = array('' => t('Auto')) + drupal_map_assoc(range(1, 10));
 
     $form['description'] = array(
       '#type' => 'markup',
@@ -67,6 +70,12 @@ class jcarousel_style_plugin extends views_plugin_style {
       '#default_value' => $this->options['skin'],
       '#options' => $skins,
       '#description' => t('Skins may be provided by other modules. Set to "None" if your theme includes carousel theming directly in style.css or another stylesheet. "None" does not include any built-in navigation, arrows, or positioning at all.'),
+    );
+    $form['responsive'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Responsive (number of items)'),
+      '#default_value' => $this->options['responsive'],
+      '#description' => t('Select this option to have the carousel automatically adjust the number of visible items and the number of items to scroll at a time based on the available width.') . ' <strong>' . t('Changing this option will override the "Visible" and "Scroll" options and set carousel orientation to "horizontal".') . '</strong>',
     );
     $form['visible'] = array(
       '#type' => 'select',
@@ -135,17 +144,9 @@ class jcarousel_style_plugin extends views_plugin_style {
     $form['advanced']['start'] = array(
       '#type' => 'select',
       '#title' => t('Start position'),
-      '#description' => t('The item that will be shown as the first item in the list upon loading. Useful for starting a list in the middle of a set.'),
-      '#options' => $range + array('css' => t('Use a CSS Selector')),
+      '#description' => t('The item that will be shown as the first item in the list upon loading. Useful for starting a list in the middle of a set. A negative value allows choosing an item in the end, e.g. -1 is the last item.'),
+      '#options' => $range,
       '#default_value' => $this->options['start'],
-    );
-    $form['advanced']['start_css'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Start CSS Selector'),
-      '#size' => 16,
-      '#maxlength' => 128,
-      '#default_value' => $this->options['start_css'],
-      '#description' => t('If starting the carousel based on a CSS selector, enter the selector here. Any jQuery-compatible selector may be used.'),
     );
     $form['advanced']['autoPause'] = array(
       '#type' => 'checkbox',

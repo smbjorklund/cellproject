@@ -1,20 +1,28 @@
+(function ($) {
+  Drupal.behaviors.galleryformatter = {
+    attach: function (context, settings) {
+      var $images = $('.galleryformatter img', context);
+      var total_images = $images.length;
+      var loaded_images = 0;
+      $images.each(function () {
+        var img = new Image();
+        img.onload = function () {
+          loaded_images++;
+          if (loaded_images == total_images) {
+            $('.galleryformatter:not(.gallery-processed)', context).each(function () {
+              Drupal.galleryformatter.prepare(this);
+            }).addClass('gallery-processed');
+          }
+        }
+        img.src = $(this, context).attr('src');
+      });
+    }
+  };
 
-Drupal.behaviors.galleryformatter = {
-  attach: function (context) {
-    // We must wait for everything to load in order to get images' dimensions.
-    (jQuery)(window).bind('load', function() {
-      (jQuery)('.galleryformatter:not(.gallery-processed)', context).each(function(){
-        Drupal.galleryformatter.prepare(this);
-      }).addClass('gallery-processed');
-    });
-  }
-};
+  Drupal.galleryformatter = Drupal.galleryformatter || {};
 
-Drupal.galleryformatter = Drupal.galleryformatter || {};
-
-// setting up the main behaviour
-Drupal.galleryformatter.prepare = function(el) {
-  (function ($) {
+  // setting up the main behaviour
+  Drupal.galleryformatter.prepare = function(el) {
     // var $settings = Drupal.settings.galleryformatter;
     $el = $(el);
     var $slides = $('li.gallery-slide', $el);
@@ -155,15 +163,17 @@ Drupal.galleryformatter.prepare = function(el) {
 
     if ($slides.length > 1) {
       // Setup buttons for next/prev slide
-      $slideButtons = ('<a class="prev-slide slide-button" title="'+ Drupal.t('Previous image') +'">&lt;</a><a class="next-slide slide-button" title="'+ Drupal.t('Next image') +'">&gt;</a>');
+      $slideButtons = ('<a href="#" class="prev-slide slide-button" title="'+ Drupal.t('Previous image') +'">&lt;</a><a href="#" class="next-slide slide-button" title="'+ Drupal.t('Next image') +'">&gt;</a>');
       $('.gallery-slides', $el).append($slideButtons);
       // Trigger the appropiate events on click
-      $('a.prev-slide', $el).click(function(){
+      $('a.prev-slide', $el).click(function(e){
+        e.preventDefault();
         $thumbs.trigger('showPrev');
       });
-      $('a.next-slide', $el).click(function(){
+      $('a.next-slide', $el).click(function(e){
+        e.preventDefault();
         $thumbs.trigger('showNext');
       });
     }
-  })(jQuery);
-}
+  }
+})(jQuery);

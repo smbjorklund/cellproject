@@ -145,7 +145,7 @@ function opac_authorities_menu() {
 
   foreach (opac_authority_types() as $type => $info) {
     $items['opac_authority/add/' . $type] = array(
-      'title' => "Add $type",
+      'title' => "Add $type authority",
       'page callback' => 'opac_authority_add',
       'page arguments' => array(2),
       'access arguments' => array('edit opac_authority entities'),
@@ -207,7 +207,6 @@ function opac_authorities_menu() {
   );
   $items['admin/config/opac/server/%/authority-mapping/%/%/edit'] = array(
     'title' => 'Edit authority mapping',
-    'description' => 'OPAC authority fields mapping',
     'page callback' => 'drupal_get_form',
     'page arguments' => array(
       'opac_authorities_admin_server_mapping_edit_form', 4, 6, 7,
@@ -259,18 +258,18 @@ function opac_authority_type_access($op, $entity = NULL) {
 function opac_authorities_permission() {
   $permissions = array(
     'administer opac_authority types' => array(
-      'title' => t('Administer authority types'),
-      'description' => t('Allows users to configure authority types and their fields.'),
+      'title' => t('Administer authority types', array(), array('context' => 'libraries')),
+      'description' => t('Allows users to configure authority types and their fields.', array(), array('context' => 'libraries')),
       'restrict access' => TRUE,
     ),
     'edit opac_authority entities' => array(
-      'title' => t('Create, edit, delete authorities'),
-      'description' => t('Allows users to manage authorities.'),
+      'title' => t('Create, edit, delete authorities', array(), array('context' => 'libraries')),
+      'description' => t('Allows users to manage authorities.', array(), array('context' => 'libraries')),
       'restrict access' => TRUE,
     ),
     'view opac_authority entities' => array(
-      'title' => t('View authorities'),
-      'description' => t('Allows users to view authorities.'),
+      'title' => t('View authorities', array(), array('context' => 'libraries')),
+      'description' => t('Allows users to view authorities.', array(), array('context' => 'libraries')),
       'restrict access' => TRUE,
     ),
   );
@@ -376,7 +375,7 @@ function opac_authorities_field_extra_fields() {
       'form' => array(
         'title' => array(
           'label' => t('Title'),
-          'description' => t('Authority title'),
+          'description' => t('Authority title', array(), array('context' => 'libraries')),
           'weight' => -5,
         ),
       ),
@@ -391,7 +390,7 @@ function opac_authorities_field_extra_fields() {
 function opac_authorities_opac_node_field_plugin_info() {
   $plugins = array(
     'authority_link' => array(
-      'label' => t('Authority link'),
+      'label' => t('Authority link', array(), array('context' => 'libraries')),
       'file' => 'plugins/authority_link.inc',
       'available callback' => 'opac_authorities_plugin_authority_link_available',
       'value callback' => 'opac_authorities_plugin_authority_link',
@@ -418,4 +417,48 @@ function opac_authorities_features_api() {
       'feature_source' => TRUE,
     ),
   );
+}
+
+/**
+ * Get all authorities.
+ *
+ * @return array
+ *   Opac autorities keyed with node id.
+ */
+function opac_authorities_get_node_ids() {
+  $result = db_select('opac_authority', 'r')
+    ->fields('r')
+    ->execute();
+
+  $node_ids = array();
+  while ($record = $result->fetchAssoc()) {
+    $aid = $record['authid'];
+    $sid = $record['server_id'];
+    $nid = $record['server_authid'];
+    $node_ids[$sid][$aid] = $nid;
+  }
+  return $node_ids;
+}
+
+/**
+ * Get a node id for a given authority.
+ *
+ * @param string $serverid
+ *   The server where the authority come from.
+ *
+ * @param string $authid
+ *   The authority identifier.
+ *
+ * @return string
+ *   The node id.
+ */
+function opac_authorities_get_node_id($serverid, $authid) {
+  $nid = db_select('opac_authority', 'r')
+    ->fields('r')
+    ->condition('server_id', $serverid)
+    ->condition('server_authid', $authid)
+    ->execute()
+    ->fetchField();
+
+  return $nid;
 }

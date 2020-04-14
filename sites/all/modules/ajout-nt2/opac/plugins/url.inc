@@ -16,7 +16,7 @@ function opac_plugin_url($record, $mapping) {
   $field_type = $mapping['field_type'];
   $remotefield = $mapping['mapped_with'];
   $function = "_opac_plugin_url_format_$field_type";
-  $truncate_function = "_opac_plugin_url_truncate_$field_type" . "_title";
+  $truncate_function = '_opac_plugin_url_truncate_' . $field_type . '_title';
 
   $return = array('und' => array());
   if (isset($record[$remotefield])) {
@@ -24,9 +24,9 @@ function opac_plugin_url($record, $mapping) {
       $url = _opac_plugin_url_replace_token($mapping['url_string'], $value);
       $title = _opac_plugin_url_replace_token($mapping['url_title'], $value);
       $return['und'][] = call_user_func(
-	$function,
-	$url,
-	call_user_func($truncate_function, $mapping, $title)
+        $function,
+        $url,
+        call_user_func($truncate_function, $mapping, $title)
       );
     }
   }
@@ -107,7 +107,7 @@ function _opac_plugin_url_replace_token($string, $value) {
 /**
  * Truncate title string according to the field setting.
  */
-function _opac_plugin_url_truncate_link_field_title ($mapping, $value) {
+function _opac_plugin_url_truncate_link_field_title($mapping, $value) {
   $field_info = field_info_field($mapping['node_field_name']);
   $max_length = isset($field_info['settings']['title_maxlength']) ? $field_info['settings']['title_maxlength'] : '';
   $title = $max_length ? drupal_substr($value, 0, $max_length) : $value;

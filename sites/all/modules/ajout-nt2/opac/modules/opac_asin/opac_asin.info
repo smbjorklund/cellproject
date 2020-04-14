@@ -6,9 +6,9 @@ core = 7.x
 dependencies[] = opac
 dependencies[] = asin
 
-; Information added by  packaging script on 2013-11-05
-version = "7.x-2.0"
+; Information added by Drupal.org packaging script on 2015-01-06
+version = "7.x-2.3"
 core = "7.x"
 project = "opac"
-datestamp = "1383643731"
+datestamp = "1420530482"
 

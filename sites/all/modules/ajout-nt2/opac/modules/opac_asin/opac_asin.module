@@ -43,8 +43,14 @@ function opac_asin_plugin_asin($record, $mapping) {
         foreach ($matches[0] as $match) {
           $match = str_replace('-', '', $match);
           $length = strlen($match);
-          if ($length == 10 || $length == 13) {
-            $field['und'][] = array('asin' => $match);
+          if ($length == 10) {
+            $asin = $match;
+          }
+          elseif ($length == 13) {
+            $asin = amazon_ean_to_asin($match);
+          }
+          if (isset($asin)) {
+            $field['und'][] = array('asin' => $asin);
             $valid_isbn_count++;
           }
         }

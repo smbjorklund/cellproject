@@ -1,3 +1,92 @@
+7.x-1.x-dev
+Development snapshot
+
+2020-03-17
+New stable release: 7.x-1.19
+
+[#2349885] by hass, Dieter Geiling: Add config.smiley_path for relative image urls
+[#2993053] by stefan.korn: DocBlock missing for hook_user_presave()
+[#2211217] by bwaindwain, gifad: Using "theme css", CKEditor fails to translate URI to valid URL
+[#172229] by vokiel: Update CKEditor to 4.14.0
+[#169464] by vokiel: Fix (remove) the eval() usage inside JavaScript files.
+[#2679179] by Dave Reid, ron_s: CKEditor uses separate cache-busting query string from Drupal's
+[#2795603] by hgoto: drush ckeditor-download command raises warning with undefined offset
+[#2947109] by jstoller: New default CKEditor skin not recognized
+[#2898012] bump CKEditor to 4.9.2
+[#2790539] by Johnny vd Laar: prepare callback is optional, ckeditor_filter_xss causes notices
+
+2017-06-26
+New stable release: 7.x-1.18
+
+[#2463187] by Devin Carlson: Allow plugins to specify custom paths for button icons
+[#2299617] by ben.kyriakou: IMCE browser in CKEditor plugin doesn't respect current language
+[#1330794] by m4olivei, bwaindwain, ConfuciusDa1st, fearlsgroove: Use theme css in sub-theme does not include base theme
+[#2886073] by anrikun: Mistake in feature dependencies
+[#2644124] by drclaw: Some CKEditor plugins buttons don't appear in the Drag & Drop toolbar wizard
+[#2540528] by neerajsingh: In filemanager.config.php, Building $baseDir
+[#2705773] by japerry: ckeditor missing the 'prepare callback' from input filters
+[#2745809] by alvar0hurtad0: Add some tests to avoid failed testing of all patches
+
+2015-11-30
+New stable release: 7.x-1.17
+
+[#2550535] by jcisio, donquixote: $plugin_settings['active'] is messing with features
+[#2574253] by karenann: User specific "Default state" setting is not obeyed
+[#2514938] by themic8, jcisio: Use the latest version from CDN
+[#2542566] by jcisio: remove leftover icon.gif
+[#2542566] by bneil, srjosh, jcisio: Remove Media integration
+[#2437749] by Perignon, david.gil, jcisio: Infinity bucle in some cases in ckeditor_file_download
+[#2463461] by Luukyb: Cleanup .gitignore file from git
+[#1154730] by Sutharsan: CKEditor not following body rows setting Drupal 7
+[#2292575] by Hai-Nam Nguyen: mistakenly added a new line
+[#2292575] by Angry Dan: Naming of mediaembed plugin is confusing
+[#2323149] by kaare: ckeditor.admin.css: url() for tick.png and delete.png must point to ../images/
+[#2159403] by das-peter, aDarkling, Devin Carlson, wwalc, Angry Dan, brantwynn, agoradesign, micbar, joelpittet, brockfanning, iKb: Make CKEditor plugin system modular and clean
+[#2324383] by eugene.ilyin: Toolbar in Ckeditor profile is not saved: incompatibility with jQuery 1.10
+[#2367913] by yched: Fixed ckeditor_help() issues one uncached locale query on each page.
+
+2014-10-14
+New stable release: 7.x-1.16
+
+[#2357029] SA-CONTRIB-2014-098 - CKEditor - Cross Site Scripting (XSS)
+
+2013-07-15
+New stable release 7.x-1.15
+
+Updated the default URL to CKEditor CDN to use the 4.4.3 version.
+[#2175565] removed ckeditor.make added in 7.x-1.14.
+
+2013-05-08
+New stable release 7.x-1.14
+
+[#2255129] by wwalc: Introduced support for the codesnippet and mathjax plugins.
+[#1762328] by wwalc: IMPORTANT: <code> tags are no longer protected by default.
+[#1327898] by grasmash: Adding new ckeditor_security_filter_alter() hook.
+[#2175565] by hswong3i: Download Library with ckeditor.make for Simple Profile Integration. (removed in 7.x-1.15)
+[#2249139] by wwalc: Use CKEditor 4.4.0 from CKEditor CDN (http://cdn.ckeditor.com) by default.
+[#1370894] by uberhacker, mgifford, Devin Carlson: Conditionally load ckeditor.css only when necessary.
+[#1960808] by valkum, wwalc: Avoid using arg() in code.
+[#1914496] by Danylo Dragan: Drush integration code doesn't respect --skip option.
+[#2085245] by jlyon: Fix theme path displayed on Edit CKEditor Profile page.
+[#2123669] by wwalc: Better support for loading custom CKEditor skins.
+[#1914904] by rooby: Media plugin not working in IE 9 and below.
+[#2244835] by loopduplicate: CKEditor is not visible in Panels IPE in IE11.
+[#2244817] by wwalc: CKEditor from CDN does not load in Panels IPE when a form is loaded in a popup for the first time.
+[#2244387] by wwalc: 3rd party plugins with large icons break the toolbar configurator.
+[#2013657] by pfrenssen: Allow other modules to alter the default settings.
+[#2236367] by greenSkin: Add $conf array to ckeditor_settings alter hook.
+[#1452544] by covenantd, RedRat: DrupalPageBreak button not visible when using Smart Paging module.
+[#2231005] by ChinggizKhan: Only set "window.CKEDITOR_BASEPATH" when it isnt already set.
+[#1659576] by ChinggizKhan: Text of "Switch to plain text editor" link doesn't toggle.
+[#2043365] by Erik Erskine, Danny_Joris: CKEditor profile exported as feature with filter format does not import properly.
+[#2234971] by wwalc: Adjust the default toolbars.
+[#2234967] by wwalc: Add support for loading CKEditor from remote URL.
+[#2234943] by wwalc: Use the moono icons in the administration area.
+[#2127467] by wwalc: Support Pantheon Live Environment.
+[#1971566] by wwalc: Mediaembed throws JS error with ACF enabled.
+[#1950498] by wwalc: Advanced Content Filter introduced in CKEditor 4.1 is now configurable in CKEditor profile.
+[#1971502] by wwalc: Mediaembed plugin should define allowedContent for ACF.
+
 2013-04-12
 New stable release 7.x-1.13
 

@@ -14,6 +14,8 @@ Drupal.behaviors.jcarousel.attach = function(context, settings) {
     return;
   }
 
+  $("ul.jcarousel li").css("display", "");
+
   $.each(settings.jcarousel.carousels, function(key, options) {
     var $carousel = $(options.selector + ':not(.jcarousel-processed)', context);
 
@@ -46,14 +48,11 @@ Drupal.behaviors.jcarousel.attach = function(context, settings) {
       };
     }
 
-    // Before we instantiate the carousel we need to make options.start an
-    // integer.
-    if (options.start == 'css') {
-      // Find the element matching the supplied selector and return it's parent
-      // list element.
-      var $current = $carousel.find(options.start_css).parents(options.selector + ' li');
-      var scrollTarget = ($(options.selector + ' li').index($current) + 1);
-      options.start = 1;
+    // Add responsive behavior.
+    if (options.responsive  && !options.reloadCallback) {
+      options.vertical = false;
+      options.visible = null;
+      options.reloadCallback = Drupal.jcarousel.reloadCallback;
     }
 
     // Add navigation to the carousel if enabled.
@@ -63,14 +62,8 @@ Drupal.behaviors.jcarousel.attach = function(context, settings) {
         if (options.navigation) {
           Drupal.jcarousel.addNavigation(carousel, options.navigation);
         }
-
-        // Using options.start as normal causes the carousel to change page
-        // numbering. That's very confusing since the carousel indexes wouldn't be
-        // consistent for different states of the current node. Instead, we
-        // initialize the carousel above, then manually scroll to the selected
-        // item.
-        if (scrollTarget) {
-          Drupal.jcarousel.updatePager(carousel, Math.ceil(scrollTarget / carousel.pageSize), false);
+        if (options.responsive) {
+          carousel.reload();
         }
       };
       if (options.navigation && !options.itemVisibleInCallback) {
@@ -87,11 +80,28 @@ Drupal.behaviors.jcarousel.attach = function(context, settings) {
 
     // Initialize the jcarousel.
     $carousel.addClass('jcarousel-processed').jcarousel(options);
-
   });
 };
 
 Drupal.jcarousel = {};
+Drupal.jcarousel.reloadCallback = function(carousel) {
+  // Set the clip and container to auto width so that they will fill
+  // the available space.
+  carousel.container.css('width', 'auto');
+  carousel.clip.css('width', 'auto');
+  var clipWidth = carousel.clip.width();
+  var containerExtra = carousel.container.width() - carousel.clip.outerWidth(true);
+  // Determine the width of an item.
+  var itemWidth = carousel.list.find('li').first().outerWidth(true);
+  var numItems = Math.floor(carousel.clip.width() / itemWidth) || 1;
+  // Set the new scroll number.
+  carousel.options.scroll = numItems;
+  var newClipWidth = numItems * itemWidth;
+  var newContainerWidth = newClipWidth + containerExtra;
+  // Resize the clip and container.
+  carousel.clip.width(newClipWidth);
+  carousel.container.width(newContainerWidth);
+};
 Drupal.jcarousel.ajaxLoadCallback = function(jcarousel, state) {
   // Check if the requested items already exist.
   if (state == 'init' || jcarousel.has(jcarousel.first, jcarousel.last)) {
@@ -167,9 +177,8 @@ Drupal.jcarousel.setupCarousel = function(carousel) {
   carousel.pageNumber = 1;
 
   // Disable the previous/next arrows if there is only one page.
-  if (carousel.pageCount == 1) {
-    carousel.buttonNext.addClass('jcarousel-next-disabled').attr('disabled', true);
-    carousel.buttonPrev.addClass('jcarousel-prev-disabled').attr('disabled', true);
+  if (carousel.options.wrap != 'circular' && carousel.pageCount == 1) {
+    carousel.buttons(false, false);
   }
 
   // Always remove the hard-coded display: block from the navigation.
@@ -203,35 +212,21 @@ Drupal.jcarousel.addNavigation = function(carousel, position) {
 
     // Scroll to the correct page when a pager is clicked.
     pagerItem.bind('click', function() {
+      // We scroll to the new page based on item offsets. This works with
+      // circular carousels that do not divide items evenly, making it so that
+      // going back or forward in pages will not skip or repeat any items.
       var newPageNumber = $(this).parent().attr('jcarousel-page');
-      Drupal.jcarousel.updatePager(carousel, newPageNumber, false);
+      var itemOffset = (newPageNumber - carousel.pageNumber) * carousel.pageSize;
+
+      if (itemOffset) {
+        carousel.scroll(carousel.first + itemOffset);
+      }
+
       return false;
     });
   }
 
   $(carousel.list).parents('.jcarousel-clip:first')[position](navigation);
-}
-
-/**
- * Move the pager to a specific page in the carousel.
- *
- * @param carousel
- *   The carousel instance to scroll.
- * @param newPageNumber
- *   The page number to scroll to.
- * @param animate
- *   Boolean to indicate if the transition to the new page should be animated
- *   or not.
- */
-Drupal.jcarousel.updatePager = function(carousel, newPageNumber, animate) {
-  // We scroll to the new page based on item offsets. This works with
-  // circular carousels that do not divide items evenly, making it so that
-  // going back or forward in pages will not skip or repeat any items.
-  var itemOffset = (newPageNumber - carousel.pageNumber) * carousel.pageSize;
-
-  if (itemOffset) {
-    carousel.scroll(carousel.first + itemOffset, animate);
-  }
 }
 
 /**

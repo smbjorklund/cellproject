@@ -13,7 +13,7 @@
           $(avail).html(data);
         },
         error: function(jqXHR, textStatus, errorThrown) {
-          $(avail).html("Unable to retrieve items availability");
+          $(avail).html(Drupal.t('Unable to retrieve items availability', {}, {'context': 'libraries'}));
         }
       });
     });
@@ -34,7 +34,7 @@
           }
         },
         error: function(jqXHR, textStatus, errorThrown) {
-          $(info).html("Unable to retrieve items information");
+          $(info).html(Drupal.t('Unable to retrieve items information', {}, {'context': 'libraries'}));
         }
       });
     });

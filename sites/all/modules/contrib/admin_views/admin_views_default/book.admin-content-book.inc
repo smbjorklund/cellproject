@@ -20,7 +20,8 @@ $handler = $view->new_display('default', 'Master', 'default');
 $handler->display->display_options['title'] = 'Books';
 $handler->display->display_options['use_ajax'] = TRUE;
 $handler->display->display_options['use_more_always'] = FALSE;
-$handler->display->display_options['access']['type'] = 'menu';
+$handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'access administration pages';
 $handler->display->display_options['cache']['type'] = 'none';
 $handler->display->display_options['query']['type'] = 'views_query';
 $handler->display->display_options['exposed_form']['type'] = 'basic';
@@ -376,8 +377,15 @@ $translatables['admin_views_book'] = array(
   t('‹ previous'),
   t('next ›'),
   t('last »'),
+  t('No books available.'),
   t('Book'),
   t('author'),
+  t('- Choose an operation -'),
+  t('Change author'),
+  t('Delete'),
+  t('Modify values'),
+  t('Publish'),
+  t('Unpublish'),
   t('Author'),
   t('Post date'),
   t('Updated date'),

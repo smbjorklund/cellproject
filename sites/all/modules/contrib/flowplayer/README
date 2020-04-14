@@ -13,6 +13,16 @@ Integration
     * Blue Droplet Video
     * Video
 
+Dependencies
+
+The Flowplayer package must be downloaded separately to this module. It may be
+obtained from https://www.flowplayer.org/pricing/#downloads and then placed in
+sites/all/libraries with the directory name "flowplayer" so that the site
+contains a file at sites/all/libraries/flowplayer/flowplayer.js.
+
+The Libraries API (https://drupal.org/project/libraries) module may be used
+should the site need the library to be stored elsewhere.
+
 API
 
 To create Flowplayer elements, you can either use the theme('flowplayer') function, or the flowplayer_add() function. The theme function will add the JavaScript to the page, as well as create the markup for you, while the flowplayer_add() function will just add the JavaScript. To see both methods in action, install the module, and visit admin/help/flowplayer.

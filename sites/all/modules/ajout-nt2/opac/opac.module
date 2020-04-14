@@ -140,14 +140,14 @@ function opac_menu() {
     'type' => MENU_LOCAL_ACTION,
   );
   $items['admin/config/opac/servers/manage/%opac_server/content-types/%/edit'] = array(
-    'title' => 'Add content type',
+    'title' => 'Edit content type',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('opac_content_type_edit_form', 5, 7),
     'file' => 'opac.admin.content-types.inc',
     'access arguments' => array('manage opac servers'),
   );
   $items['admin/config/opac/servers/manage/%opac_server/content-types/%/delete'] = array(
-    'title' => 'Add content type',
+    'title' => 'Delete content type',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('opac_content_type_delete_confirm', 5, 7),
     'file' => 'opac.admin.content-types.inc',
@@ -173,8 +173,8 @@ function opac_menu() {
   );
   $items['admin/config/opac/server/%/mapping/%/%/delete'] = array(
     'title' => 'Delete mapping',
-    'page callback' => 'opac_mapping_delete_callback',
-    'page arguments' => array(4, 6, 7),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('opac_mapping_delete_confirm', 4, 6, 7),
     'file' => 'opac.admin.inc',
     'access arguments' => array('manage opac servers'),
     'type' => MENU_CALLBACK,

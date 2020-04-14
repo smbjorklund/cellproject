@@ -58,3 +58,11 @@ div.toc-filter-back-to-top a:visited {
   display: block;
   font-weight: bold;
 }
+
+div.toc-filter-jump-menu > form /* Must hide the <form> and not the parent <div> which also hides the <noscript> contents in chrome */ {
+  display: none;
+}
+
+html.js div.toc-filter-jump-menu > form {
+  display: block;
+}

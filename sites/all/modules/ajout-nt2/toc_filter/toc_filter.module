@@ -8,6 +8,10 @@
  * Implements hook_init().
  */
 function toc_filter_init() {
+  if (module_exists('ctools')) {
+    drupal_add_js( drupal_get_path('module', 'ctools') . '/js/jump-menu.js', array('type' => 'file', 'every_page' => TRUE));
+  }
+
   if (variable_get('toc_filter_smooth_scroll', '1')) {
     drupal_add_js( drupal_get_path('module', 'toc_filter') . '/toc_filter.js', array('type' => 'file', 'every_page' => TRUE));
     $settings = array(
@@ -37,9 +41,16 @@ function toc_filter_menu() {
  * Implements hook_filter_info().
  */
 function toc_filter_filter_info() {
+  if (module_exists('ctools')) {
+    $description = t("Converts &lt;@header_tag&gt; tags to a linked table of contents or jump menu with an optional title. (i.e [TOC:(faq|numbered|jump-menu|menu) (title)]", array('@header_tag' => variable_get('toc_filter_header_tag', 'h3')) );
+  }
+  else {
+    $description = t("Converts &lt;@header_tag&gt; tags to a linked table of contents with an optional title. (i.e [TOC:(faq|numbered) (title)]", array('@header_tag' => variable_get('toc_filter_header_tag', 'h3')) );
+  }
+
   $filters['toc_filter'] = array(
     'title' => t('Table of contents'),
-    'description' => t("Converts &lt;@header_tag&gt; tags to a linked table of contents with an optional title. (i.e [TOC:(faq|numbered) (title)]", array('@header_tag' => variable_get('toc_filter_header_tag', 'h3')) ),
+    'description' => $description,
     'default settings' => array(),
     'settings callback' => '_toc_filter_settings_callback',
     'process callback' => '_toc_filter_process_callback',
@@ -52,37 +63,63 @@ function toc_filter_filter_info() {
  * TOC filter tips.
  */
 function _toc_filter_tips_callback($delta, $format, $long = FALSE) {
-  return t("Adding [TOC:(faq|ol|number|ul|bullet) (title)] will generate a table of contents linked to all the &lt;h2&gt; tags with an optional title.");
+  if (module_exists('ctools')) {
+    return t("Adding [TOC:(faq|ol|number|ul|bullet|jump-menu|menu) (title)] will generate a table of contents or jump menu linked to all the &lt;@header_tag&gt; tags with an optional title.", array("@header_tag" => variable_get('toc_filter_header_tag', 'h3')));
+  }
+  else {
+    return t("Adding [TOC:(faq|ol|number|ul|bullet) (title)] will generate a table of contents linked to all the &lt;@header_tag&gt; tags with an optional title.", array("@header_tag" => variable_get('toc_filter_header_tag', 'h3')));
+  }
 }
 
 /**
  *  TOC filter processor callback: Convert's <h2> to a linked table of contents.
  */
 function _toc_filter_process_callback($text) {
-  if (stripos($text, '[toc') === FALSE || !preg_match('/(?:<p>)?\s*\[TOC(?::(\w+))?([^\]]+)?\]\s*(?:<\/p>)?/i', $text, $matches) ) {
+  if (stripos($text, '[toc') === FALSE || !preg_match('/(?:<p>)?\s*\[TOC(?::([a-z-]+))?([^\]]+)?\]\s*(?:<\/p>)?/i', $text, $matches) ) {
     return $text;
   }
+
+  // Must track nested filter calls which can be created by drupal_get_form('ctools_jump_menu').
+  static $processing = array();
+  $md5 = md5($text);
+  if (isset($processing[$md5])) {
+    return $text;
+  }
+  $processing[$md5] = TRUE;
 
   $match = $matches[0];
   $type = (!empty($matches[1])) ? drupal_strtolower($matches[1]) : 'ul';
   $title = (!empty($matches[2])) ? trim($matches[2]) : '';
-  if (empty($title)) {
-    $title = variable_get('toc_filter_'. $type . '_default_title', '');
-  }
 
-  // Convert HTML tag types to readable strings.
+  // Set format based on type.
   switch ($type) {
-    case 'ol': $type = 'number'; break;
-    case 'ul': $type = 'bullet'; break;
+    case 'jump-menu':
+    case 'menu':
+      $format = 'jump_menu';
+      break;
+    case 'faq':
+      $format = 'faq';
+      break;
+    case 'number':
+    case 'ol':
+      $format = 'number';
+      break;
+    case 'ul':
+    case 'bullet':
+    default:
+      $format = 'bullet';
+      break;
   }
 
-  $is_numbered = ($type == 'number' || $type == 'faq') ? TRUE : FALSE;
+  $title = (empty($title)) ? variable_get('toc_filter_' . $format . '_default_title', '') : $title;
+  $is_numbered = ($format == 'number' || $format == 'faq') ? TRUE : FALSE;
 
   $header_tag = variable_get('toc_filter_header_tag', 'h3');
-  preg_match_all('/(<'. $header_tag .'[^>]*>)(.*?)(<\/'. $header_tag .'>)/s', $text, $header_matches);
+  preg_match_all('/(<' . $header_tag . '[^>]*>)(.*?)(<\/' . $header_tag . '>)/is', $text, $header_matches);
 
-  $links_items = array();
+  $targets = array();
   $links = array();
+
   for ($i=0, $len=count($header_matches[0]); $i<$len; $i++) {
     $header_match = $header_matches[0][$i];
     $open_tag = $header_matches[1][$i];
@@ -92,16 +129,17 @@ function _toc_filter_process_callback($text) {
 
     // Add header class to open tag
     $open_tag_attributes = toc_filter_parse_tag_attributes($open_tag) + array('class' => '');
-    $open_tag_attributes['class'] .= ((empty($open_tag_attributes['class'])) ? '' : ' ') . 'toc-header toc-header-' . $type;
+    $open_tag_attributes['class'] .= ((empty($open_tag_attributes['class'])) ? '' : ' ') . ' toc-header toc-header-' . $format;
 
     $header_replace = '<' . $header_tag . drupal_attributes($open_tag_attributes) . '>' .
       '<a name="' . $header_id . '" id="' . $header_id . '" class="toc-bookmark" rel="bookmark" title="' . strip_tags($header_title) . '"></a>' .
-      (($is_numbered) ? '<span class="toc-number">' . ($i+1) . '.  </span> ':'') .
+      (($is_numbered) ? '<span class="toc-number">' . ($i+1) . ' .  </span> ':'') .
       $header_title .
       $close_tag;
 
     // Must manually build each link item since l() function can't generate just an anchor link (aka #anchor).
-    $links[] = '<a href="#'. $header_id .'">'. strip_tags($header_title, '<i><em><b><strong><br>') .'</a>';
+    $targets['#' . $header_id] = strip_tags($header_title);
+    $links[] = '<a href="#' . $header_id . '">' . strip_tags($header_title, '<i><em><b><strong><br>') . '</a>';
 
     // Add anchor before header
     $back_to_top = theme('toc_filter_back_to_top', array('class' => ($i == 0) ? 'first' : ''));
@@ -115,15 +153,36 @@ function _toc_filter_process_callback($text) {
 
   // Theme list
   $links_list_type = ($is_numbered) ? 'ol' : 'ul';
-  $links_list_attributes = array('class' => 'toc-filter-links');
-  $links_list = theme('item_list', array('items' => $links, 'title' => check_plain($title), 'type' => $links_list_type, 'attributes' => $links_list_attributes));
+  $toc_content = theme('item_list', array('items' => $links, 'title' => check_plain($title), 'type' => $links_list_type, 'attributes' => array('class' => 'toc-filter-links')));
+  $output = theme('toc_filter', array('type' => $type, 'content' => $toc_content));
 
-  // Theme toc
-  $output = theme('toc_filter', array('type' => $type, 'content' => $links_list));
+  // Add jump menu with noscript list.
+  if ($format == 'jump_menu' && module_exists('ctools')) {
+    $options = array();
+    if ($title) {
+      $options['choose'] = check_plain($title);
+    }
+    ctools_include('jump-menu');
+    $jump_menu = drupal_get_form('ctools_jump_menu', $targets, $options);
+    $output = '<div class="toc-filter-jump-menu">' .
+      drupal_render($jump_menu) .
+      '</div>' .
+      '<noscript>' .
+      $output .
+      '</noscript>';
+  }
+
+  // Prepend #top
+  $output = '<a name="top"></a>' . $output;
+
+    // Replace matched text with output.
   $text = str_replace($match, $output, $text);
 
   // Add closing back to top.
   $text .= theme('toc_filter_back_to_top', array('class' => 'last'));
+
+  unset($processing[$md5]);
+
   return $text;
 }
 
@@ -171,7 +230,7 @@ function toc_filter_theme() {
   return array(
     'toc_filter' => array(
       'variables' => array(
-        'type' => 'ul',
+        'format' => '',
         'content' => '',
       ),
     ),
@@ -195,8 +254,7 @@ function theme_toc_filter_back_to_top($variables) {
  * Format TOC filter.
  */
 function theme_toc_filter($variables) {
-  $output = '<a name="top" class="toc-filter-top"></a>';
-  $output .= '<div class="toc-filter toc-filter-' . $variables['type'] . '">';
+  $output = '<div class="toc-filter toc-filter-' . $variables['format'] . '">';
   $output .= '<div class="toc-filter-content">' . $variables['content'] . '</div>';
   $output .= '</div>';
   return $output;

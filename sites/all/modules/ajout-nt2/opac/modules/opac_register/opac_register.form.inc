@@ -269,7 +269,7 @@ function opac_register_registration_form($form, &$form_state) {
     $terms = taxonomy_get_tree($vid);
     $city_options = array();
 
-    // Adding an empty value if the field is not required
+    // Adding an empty value if the field is not required.
     if (!variable_get('opac_register_field_city_mandatory', TRUE)) {
       $city_options[''] = '';
     }
@@ -599,7 +599,7 @@ function opac_register_registration_form_submit($form, &$form_state) {
       if ($account->mail) {
         $params['account'] = $account;
 
-        // Getting branch name
+        // Getting branch name.
         $vid = _opac_taxonomy_get_vid('library');
         $tid = _opac_taxonomy_get_term($vid, 'field_code', $values['branch']);
         $term = taxonomy_term_load($tid);
