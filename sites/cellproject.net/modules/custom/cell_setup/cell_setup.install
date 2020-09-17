@@ -1,0 +1,13 @@
+<?php
+/**
+ * @file
+ * Install and uninstall code.
+ */
+
+/**
+ * Uninstall already disabled modules.
+ */
+function cell_setup_update_7000() {
+  drupal_uninstall_modules(['comment', 'toolbar'], TRUE);
+}
+

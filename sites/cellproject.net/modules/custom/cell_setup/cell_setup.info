@@ -1,0 +1,4 @@
+name = Setup Cellproject
+description = Configuration and maintanance tasks.
+core = 7.x
+package = CELL
