@@ -5,9 +5,11 @@
  */
 
 /**
- * Uninstall already disabled modules.
+ * Implements hook_install().
  */
-function cell_setup_update_7000() {
-  drupal_uninstall_modules(['comment', 'toolbar'], TRUE);
+function cell_setup_install() {
+  drupal_uninstall_modules(['comment', 'toolbar', 'php', 'shortcut', 'toc_filter', 'facetapi_i18n'], TRUE);
+  $modules = ['garland', 'overlay', 'devel', 'backup_migrate', 'masquerade', 'ds_ui', 'views_ui'];
+  module_disable($modules, TRUE);
+  drupal_uninstall_modules($modules);
 }
-
