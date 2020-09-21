@@ -9,7 +9,22 @@
  */
 function cell_setup_install() {
   drupal_uninstall_modules(['comment', 'toolbar', 'php', 'shortcut', 'toc_filter', 'facetapi_i18n'], TRUE);
-  $modules = ['garland', 'overlay', 'devel', 'backup_migrate', 'masquerade', 'ds_ui', 'views_ui'];
+  $modules = [
+    'garland',
+    'overlay',
+    'devel',
+    'backup_migrate',
+    'masquerade',
+    'ds_ui',
+    'views_ui',
+    'admin_menu_toolbar',
+    'scald_dailymotion',
+    'scald_vimeo',
+    'scald_youtube',
+    'apachesolr',
+    'devel_themer',
+    'mollom',
+  ];
   module_disable($modules, TRUE);
   drupal_uninstall_modules($modules);
 }
