@@ -8,9 +8,19 @@
  * Implements hook_install().
  */
 function cell_setup_install() {
-  drupal_uninstall_modules(['comment', 'toolbar', 'php', 'shortcut', 'toc_filter', 'facetapi_i18n'], TRUE);
+  drupal_uninstall_modules(['comment',
+    'toolbar',
+    'php',
+    'shortcut',
+    'toc_filter',
+    'facetapi_i18n',
+    'scald_dailymotion',
+    'scald_vimeo',
+    'scald_youtube',
+    'devel_themer',
+    'mollom'], FALSE);
+
   $modules = [
-    'garland',
     'overlay',
     'devel',
     'backup_migrate',
@@ -18,13 +28,11 @@ function cell_setup_install() {
     'ds_ui',
     'views_ui',
     'admin_menu_toolbar',
-    'scald_dailymotion',
-    'scald_vimeo',
-    'scald_youtube',
-    'apachesolr',
-    'devel_themer',
-    'mollom',
+    'admin_menu',
   ];
+  theme_disable(['garland','bartik']);
   module_disable($modules, TRUE);
-  drupal_uninstall_modules($modules);
+  drupal_uninstall_modules($modules, FALSE);
+  drupal_uninstall_modules(['apachesolr_search', 'apachesolr'], TRUE);
+  module_enable(['toolbar']);
 }
