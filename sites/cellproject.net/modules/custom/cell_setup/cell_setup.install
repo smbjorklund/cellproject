@@ -35,4 +35,6 @@ function cell_setup_install() {
   drupal_uninstall_modules($modules, FALSE);
   drupal_uninstall_modules(['apachesolr_search', 'apachesolr'], TRUE);
   module_enable(['toolbar']);
+  variable_set('file_temporary_path', '/tmp');
+  variable_set('file_private_path', '../private');
 }
